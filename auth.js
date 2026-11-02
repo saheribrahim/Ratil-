@@ -1,15 +1,15 @@
 // Accounts (stored in this browser) + welcome email via EmailJS -> edit CFG below
 // ---- Accounts + welcome email (fill CFG to enable emails via emailjs.com) ----
-const CFG={service:"",template:"",key:"",owner:""};
-let U={};try{U=JSON.parse(localStorage.getItem("ratil-users")||"{}")}catch(_){}
-const saveU=()=>{try{localStorage.setItem("ratil-users",JSON.stringify(U))}catch(_){}};
+const CFG={service:"YOUR_SERVICE_ID",template:"YOUR_TEMPLATE_ID",key:"YOUR_PUBLIC_KEY",owner:"your-email@gmail.com"};
+let U={};try{U=JSON.parse(localStorage.getItem("ratil-users")||"{}")}catch(_){ }
+const saveU=()=>{try{localStorage.setItem("ratil-users",JSON.stringify(U))}catch(_){ }};
 const am=(t,e)=>{$("aMsg").textContent=t;$("aMsg").className=e?"err":""};
 let mode="login";
 function setMode(m){mode=m;$("tL").classList.toggle("primary",m==="login");$("tS").classList.toggle("primary",m==="signup");$("aU").style.display=m==="signup"?"":"none";$("aE").placeholder=m==="signup"?"Email / البريد الإلكتروني":"Email or username / البريد أو اسم المستخدم";$("aGo").textContent=m==="signup"?"Create account إنشاء حساب":"Log in دخول";am("")}
-async function hp(p,salt){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(_){return btoa(unescape(encodeURIComponent(salt+p)))}}
+async function hp(p,salt){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(_){return btoa(unescape(encodeURIComponent(salt+p)))} }
 async function sendMail(to,subject,message){if(!CFG.service||!CFG.template||!CFG.key)return false;try{const r=await fetch("https://api.emailjs.com/api/v1.0/email/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({service_id:CFG.service,template_id:CFG.template,user_id:CFG.key,template_params:{to_email:to,subject,message}})});return r.ok}catch(_){return false}}
-function enter(u){$("auth").style.display="none";$("me").style.display="block";$("who").textContent=u.username;try{localStorage.setItem("ratil-session",u.email)}catch(_){}}
-$("out").onclick=()=>{stop();try{localStorage.removeItem("ratil-session")}catch(_){}$("me").style.display="none";$("auth").style.display="flex";$("aP").value="";setMode("login")};
+function enter(u){$("auth").style.display="none";$("me").style.display="block";$("who").textContent=u.username;try{localStorage.setItem("ratil-session",u.email)}catch(_){ }}
+$("out").onclick=()=>{stop();try{localStorage.removeItem("ratil-session")}catch(_){ }$("me").style.display="none";$("auth").style.display="flex";$("aP").value="";setMode("login")};
 $("tL").onclick=()=>setMode("login");$("tS").onclick=()=>setMode("signup");
 $("aGo").onclick=async()=>{
  const id=$("aE").value.trim(),pw=$("aP").value;
@@ -29,5 +29,5 @@ $("aGo").onclick=async()=>{
   enter(u);msg("Welcome back, "+u.username+".");
  }
 };
-try{const s=localStorage.getItem("ratil-session");if(s&&U[s])enter(U[s])}catch(_){}
+try{const s=localStorage.getItem("ratil-session");if(s&&U[s])enter(U[s])}catch(_){ }
 setMode("login");
