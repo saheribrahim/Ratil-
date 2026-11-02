@@ -1,6 +1,6 @@
 // Accounts (stored in this browser) + welcome email via EmailJS -> edit CFG below
 // ---- Accounts + welcome email (fill CFG to enable emails via emailjs.com) ----
-const CFG={service:"YOUR_SERVICE_ID",template:"YOUR_TEMPLATE_ID",key:"YOUR_PUBLIC_KEY",owner:"your-email@gmail.com"};
+const CFG={service:"YOUR_SERVICE_ID",template:"YOUR_TEMPLATE_ID",key:"YOUR_PUBLIC_KEY",owner:"ssaheror@gmail.com"};
 let U={};try{U=JSON.parse(localStorage.getItem("ratil-users")||"{}")}catch(_){ }
 const saveU=()=>{try{localStorage.setItem("ratil-users",JSON.stringify(U))}catch(_){ }};
 const am=(t,e)=>{$("aMsg").textContent=t;$("aMsg").className=e?"err":""};
