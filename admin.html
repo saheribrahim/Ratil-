@@ -17,6 +17,7 @@
     .back-link:hover{border-color:var(--accent);transform:translateY(-1px)}
     .admin-card{background:linear-gradient(145deg,rgba(30,48,38,.96),rgba(22,34,27,.98));border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 18px 55px #0004}
     .card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .heading-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     h2{margin:0;font-size:19px}.badge{display:inline-flex;align-items:center;gap:7px;border:1px solid #315541;background:#1d382b;color:#9be0bd;border-radius:999px;padding:6px 11px;font-size:13px}
     #notice{color:var(--mute);line-height:1.7;margin:12px 0 18px}
     .user-list{display:grid;gap:11px}
@@ -24,11 +25,12 @@
     .user-row:hover{border-color:#42624e;transform:translateY(-1px)}
     .user-info{min-width:0;display:grid;gap:4px}.user-name{font-weight:650;overflow-wrap:anywhere}.user-email{font-size:13px;color:var(--mute);direction:ltr;text-align:right;overflow-wrap:anywhere}
     .admin-badge{font-size:12px;color:#a6e8c8;background:#1c382a;border:1px solid #315541;border-radius:999px;padding:4px 9px;width:max-content}
-    .delete-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#bd4843,#963532);color:#fff;border:1px solid #da655d;border-radius:11px;padding:9px 13px;font:inherit;font-size:14px;font-weight:650;cursor:pointer;box-shadow:0 5px 14px #9f393333;transition:transform .16s,filter .16s,box-shadow .16s;white-space:nowrap}
-    .delete-btn:hover{filter:brightness(1.12);transform:translateY(-2px);box-shadow:0 8px 18px #9f393355}
-    .delete-btn:active{transform:translateY(0) scale(.97)}.delete-btn:focus-visible,.back-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .delete-btn,.delete-all-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#bd4843,#963532);color:#fff;border:1px solid #da655d;border-radius:11px;padding:9px 13px;font:inherit;font-size:14px;font-weight:650;cursor:pointer;box-shadow:0 5px 14px #9f393333;transition:transform .16s,filter .16s,box-shadow .16s;white-space:nowrap}
+    .delete-btn:hover,.delete-all-btn:hover{filter:brightness(1.12);transform:translateY(-2px);box-shadow:0 8px 18px #9f393355}
+    .delete-btn:active,.delete-all-btn:active{transform:translateY(0) scale(.97)}
+    .delete-btn:focus-visible,.delete-all-btn:focus-visible,.back-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
     .empty{color:var(--mute);text-align:center;padding:24px 10px;border:1px dashed var(--line);border-radius:14px}
-    @media(max-width:480px){.admin-card{padding:17px}.user-row{align-items:flex-start}.delete-btn{width:100%}}
+    @media(max-width:480px){.admin-card{padding:17px}.user-row{align-items:flex-start}.delete-btn{width:100%}.heading-actions{width:100%;justify-content:space-between}.delete-all-btn{white-space:normal}}
   </style>
 </head>
 <body>
@@ -38,7 +40,13 @@
     <a class="back-link" href="index.html">← <span>العودة للموقع</span></a>
   </header>
   <section class="admin-card" aria-labelledby="usersTitle">
-    <div class="card-heading"><h2 id="usersTitle">الحسابات</h2><span id="count" class="badge">جارٍ التحميل…</span></div>
+    <div class="card-heading">
+      <h2 id="usersTitle">الحسابات</h2>
+      <div class="heading-actions">
+        <span id="count" class="badge">جارٍ التحميل…</span>
+        <button id="deleteAll" class="delete-all-btn" type="button" hidden><span aria-hidden="true">🗑</span><span>حذف الكل وتسجيل الخروج</span></button>
+      </div>
+    </div>
     <p id="notice" role="status">جارٍ التحقق من حساب المشرف…</p>
     <div id="usersArea" class="user-list"></div>
   </section>
@@ -49,6 +57,7 @@
   const notice = document.getElementById("notice");
   const usersArea = document.getElementById("usersArea");
   const count = document.getElementById("count");
+  const deleteAllButton = document.getElementById("deleteAll");
 
   function isAdminSession() {
     return (localStorage.getItem("ratil-session") || "").toLowerCase() === ADMIN_EMAIL;
@@ -59,6 +68,7 @@
     setTimeout(() => window.location.replace("index.html"), 1600);
     return;
   }
+  deleteAllButton.hidden = false;
 
   function readUsers() {
     try {
@@ -71,7 +81,7 @@
     const users = readUsers();
     const entries = Object.entries(users).filter(([, user]) => user && typeof user === "object");
     count.textContent = `${entries.length} حساب`;
-    notice.textContent = message || "اختر الحساب الذي تريد حذفه. حساب المشرف محمي من الحذف هنا. القائمة محلية لهذا المتصفح فقط.";
+    notice.textContent = message || "يمكنك حذف حساب منفردًا أو حذف الكل. حسابات هذا الموقع محفوظة في هذا المتصفح فقط.";
     usersArea.replaceChildren();
     if (!entries.length) {
       const empty = document.createElement("div");
@@ -133,6 +143,25 @@
       usersArea.appendChild(row);
     }
   }
+
+  deleteAllButton.addEventListener("click", () => {
+    if (!isAdminSession()) {
+      notice.textContent = "انتهت صلاحية الجلسة أو لا تملك الإذن.";
+      return;
+    }
+    if (!window.confirm("تأكيد حذف جميع الحسابات، بما فيها حساب المشرف، من هذا المتصفح وتسجيل الخروج؟ لا يمكن التراجع عن ذلك.")) return;
+    try {
+      localStorage.removeItem("ratil-users");
+      localStorage.removeItem("ratil-session");
+      deleteAllButton.hidden = true;
+      count.textContent = "0 حساب";
+      notice.textContent = "تم حذف الحسابات المحلية وتسجيل الخروج. جارٍ تحويلك إلى الموقع…";
+      usersArea.replaceChildren();
+      setTimeout(() => window.location.replace("index.html"), 1000);
+    } catch (_) {
+      notice.textContent = "تعذر مسح الحسابات من التخزين المحلي لهذا المتصفح.";
+    }
+  });
 
   renderUsers();
 })();
