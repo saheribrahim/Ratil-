@@ -1,8 +1,7 @@
 (() => {
   "use strict";
 
-  // Matches the existing client-side demo admin check in auth.js.
-  // This is a convenience UI only; localStorage is not a secure authorization system.
+  // This improves the in-browser demo UI only; localStorage is not secure authentication.
   const ADMIN_EMAIL = "ssaheror@gmail.com";
   const panel = document.getElementById("adminPanel");
   if (!panel) return;
@@ -19,14 +18,39 @@
     }
   }
 
+  function stylePanel() {
+    // auth.js sets the panel's background inline. Set explicit readable foreground
+    // colors so dark-mode theme variables do not make text white on a white panel.
+    panel.style.color = "#1d2a24";
+    panel.style.background = "#fff";
+    panel.style.borderColor = "#dce5dd";
+    const title = panel.querySelector("h2");
+    if (title) {
+      title.style.color = "#1d2a24";
+      title.style.fontSize = "20px";
+      title.style.margin = "0 0 8px";
+    }
+    panel.querySelectorAll("p").forEach(p => {
+      p.style.color = "#52665a";
+      p.style.lineHeight = "1.6";
+    });
+    panel.querySelectorAll("ul").forEach(list => {
+      list.style.cssText += ";list-style:none;padding:0;margin:12px 0 0;display:grid;gap:10px";
+    });
+    panel.querySelectorAll("li").forEach(row => {
+      row.style.cssText += ";display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid #dce5dd;border-radius:10px;background:#fff;color:#1d2a24";
+    });
+  }
+
   function styleSearch(input) {
     input.type = "search";
     input.placeholder = "ابحث بالاسم أو البريد الإلكتروني";
     input.setAttribute("aria-label", "ابحث عن مستخدم");
-    input.style.cssText = "display:block;width:100%;max-width:420px;margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit";
+    input.style.cssText = "display:block;width:100%;max-width:420px;margin:12px 0;padding:10px 12px;border:1px solid #bdcfc1;border-radius:10px;background:#fff;color:#1d2a24;font:inherit";
   }
 
   function decorateAdminPanel() {
+    stylePanel();
     if (!isAdminSession() || panel.style.display === "none") return;
     const list = panel.querySelector("ul");
     if (!list) return;
@@ -42,6 +66,7 @@
 
     const entries = Object.entries(readUsers()).filter(([, user]) => user && typeof user === "object");
     Array.from(list.children).forEach((row, index) => {
+      row.style.cssText += ";display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px;border:1px solid #dce5dd;border-radius:10px;background:#fff;color:#1d2a24";
       if (row.dataset.adminUsersEnhanced === "true") return;
       row.dataset.adminUsersEnhanced = "true";
 
@@ -75,14 +100,12 @@
         const latestUsers = readUsers();
         for (const [key, latestUser] of Object.entries(latestUsers)) {
           const latestEmail = String(latestUser && latestUser.email || key).trim().toLowerCase();
-          if (latestEmail === email.toLowerCase() && latestEmail !== ADMIN_EMAIL) {
-            delete latestUsers[key];
-          }
+          if (latestEmail === email.toLowerCase() && latestEmail !== ADMIN_EMAIL) delete latestUsers[key];
         }
 
         try {
           localStorage.setItem("ratil-users", JSON.stringify(latestUsers));
-          location.reload(); // auth.js keeps an in-memory copy, so reload it from storage.
+          location.reload(); // Refresh auth.js in-memory account data from storage.
         } catch {
           alert("تعذّر تحديث قائمة الحسابات في هذا المتصفح.");
         }
@@ -101,7 +124,7 @@
     });
   }
 
-  // auth.js creates and refreshes the list when the admin opens the panel.
+  // auth.js builds the user list when the admin opens the panel.
   const observer = new MutationObserver(decorateAdminPanel);
   observer.observe(panel, { childList: true, subtree: true });
   decorateAdminPanel();
