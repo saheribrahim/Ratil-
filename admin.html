@@ -14,7 +14,7 @@
     th,td{padding:10px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
     th{color:var(--mute);font-size:13px}
     #notice{color:var(--mute)}
-    .danger{background:#a83232;color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+    .danger{background:#a83232;color:#fff;border:0;border-radius:10px;padding:8px 12px;cursor:pointer}
   </style>
 </head>
 <body>
@@ -27,16 +27,15 @@
     <h2>المستخدمون المسجلون</h2>
     <p id="notice">جارٍ التحقق من الحساب…</p>
     <div id="usersArea" class="admin-table-wrap" hidden></div>
-    <button id="deleteUsers" class="danger" type="button" hidden>حذف جميع المستخدمين عدا حساب المشرف</button>
   </section>
 </main>
 <script>
 (() => {
   // This page uses browser localStorage; it is not a secure server-side admin system.
   const ADMIN_EMAIL = "ssaheror@gmail.com";
+  const TARGET_EMAILS = ["szdasdasdasdasdasda@gmail.com", "asd@aa.gmail.com"];
   const notice = document.getElementById("notice");
   const usersArea = document.getElementById("usersArea");
-  const deleteButton = document.getElementById("deleteUsers");
   const sessionEmail = (localStorage.getItem("ratil-session") || "").toLowerCase();
   if (sessionEmail !== ADMIN_EMAIL) {
     notice.textContent = "غير مصرح لك بعرض هذه الصفحة. سجّل الدخول بحساب المشرف.";
@@ -44,47 +43,62 @@
     return;
   }
 
+  function loadUsers() {
+    try { return JSON.parse(localStorage.getItem("ratil-users") || "{}"); } catch (_) { return {}; }
+  }
   function renderUsers() {
-    let users = {};
-    try { users = JSON.parse(localStorage.getItem("ratil-users") || "{}"); } catch (_) {}
-    const entries = Object.values(users).filter(user => user && typeof user === "object");
+    const users = loadUsers();
+    const entries = Object.entries(users).filter(([, user]) => user && typeof user === "object");
     notice.textContent = `عدد الحسابات المحفوظة في هذا المتصفح: ${entries.length}. هذه القائمة محلية ولا تشمل الأجهزة الأخرى.`;
     const table = document.createElement("table");
     const thead = document.createElement("thead");
-    thead.innerHTML = "<tr><th>اسم المستخدم</th><th>البريد الإلكتروني</th></tr>";
+    thead.innerHTML = "<tr><th>اسم المستخدم</th><th>البريد الإلكتروني</th><th>الإجراء</th></tr>";
     table.appendChild(thead);
     const tbody = document.createElement("tbody");
-    for (const user of entries) {
+    for (const [key, user] of entries) {
       const row = document.createElement("tr");
       const nameCell = document.createElement("td");
       const emailCell = document.createElement("td");
+      const actionCell = document.createElement("td");
+      const email = String(user.email || key).toLowerCase();
       nameCell.textContent = user.username || "—";
-      emailCell.textContent = user.email || "—";
-      row.append(nameCell, emailCell);
+      emailCell.textContent = user.email || key || "—";
+      if (TARGET_EMAILS.includes(email)) {
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "danger";
+        deleteButton.textContent = "حذف Delete";
+        deleteButton.addEventListener("click", () => {
+          if ((localStorage.getItem("ratil-session") || "").toLowerCase() !== ADMIN_EMAIL) {
+            notice.textContent = "غير مصرح لك بهذا الإجراء.";
+            return;
+          }
+          if (!window.confirm(`هل تريد حذف الحساب ${email} من هذا المتصفح؟`)) return;
+          const currentUsers = loadUsers();
+          for (const [storedKey, storedUser] of Object.entries(currentUsers)) {
+            const storedEmail = String(storedUser && storedUser.email || storedKey).toLowerCase();
+            if (storedEmail === email) delete currentUsers[storedKey];
+          }
+          localStorage.setItem("ratil-users", JSON.stringify(currentUsers));
+          if ((localStorage.getItem("ratil-session") || "").toLowerCase() === email) {
+            localStorage.removeItem("ratil-session");
+          }
+          renderUsers();
+          notice.textContent = `تم حذف الحساب ${email} من هذا المتصفح.`;
+        });
+        actionCell.appendChild(deleteButton);
+      } else {
+        actionCell.textContent = "—";
+      }
+      row.append(nameCell, emailCell, actionCell);
       tbody.appendChild(row);
     }
     table.appendChild(tbody);
     usersArea.replaceChildren(table);
     usersArea.hidden = false;
-    deleteButton.hidden = false;
   }
 
   renderUsers();
-  deleteButton.addEventListener("click", () => {
-    if ((localStorage.getItem("ratil-session") || "").toLowerCase() !== ADMIN_EMAIL) {
-      notice.textContent = "غير مصرح لك بهذا الإجراء.";
-      return;
-    }
-    const confirmed = window.confirm("سيتم حذف كل الحسابات المحفوظة في هذا المتصفح ما عدا حساب المشرف. هل تريد المتابعة؟");
-    if (!confirmed) return;
-    let users = {};
-    try { users = JSON.parse(localStorage.getItem("ratil-users") || "{}"); } catch (_) {}
-    const adminAccount = users[ADMIN_EMAIL];
-    localStorage.setItem("ratil-users", JSON.stringify(adminAccount ? {[ADMIN_EMAIL]: adminAccount} : {}));
-    renderUsers();
-    notice.textContent = "تم حذف جميع الحسابات الأخرى من هذا المتصفح. بقي حساب المشرف فقط.";
-  });
-
   document.getElementById("logout").addEventListener("click", () => {
     localStorage.removeItem("ratil-session");
     window.location.replace("index.html");
