@@ -13,7 +13,7 @@
       --page-glow: #18382b;
       --surface: #f7f9f6;
       --surface-border: #dce5dd;
-      --card: #ffffff;
+      --card: #fff;
       --ink: #20372d;
       --muted: #52665a;
       --green: #23734d;
@@ -22,7 +22,6 @@
       --danger: #c64035;
       --danger-hover: #a92e26;
     }
-
     * { box-sizing: border-box; }
     body {
       min-height: 100vh;
@@ -93,6 +92,21 @@
       font-size: 14px;
       line-height: 1.7;
     }
+    .search-wrap { margin: 0 0 14px; }
+    #userSearch {
+      display: block;
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 13px;
+      border: 1px solid #bdcfc1;
+      border-radius: 11px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 15px;
+    }
+    #userSearch::placeholder { color: #687b6e; }
+    #userSearch:focus-visible { outline: 3px solid #78b98b; outline-offset: 2px; }
     #userList { display: grid; gap: 11px; }
     .user-card {
       display: flex;
@@ -161,6 +175,9 @@
         <span id="count" class="count">0 حساب</span>
       </div>
       <p id="notice" role="status">جارٍ تحميل الحسابات…</p>
+      <div class="search-wrap">
+        <input id="userSearch" type="search" placeholder="ابحث بالاسم أو البريد الإلكتروني" aria-label="ابحث عن مستخدم">
+      </div>
       <div id="userList"></div>
     </section>
   </main>
@@ -171,6 +188,7 @@
       const notice = document.getElementById("notice");
       const count = document.getElementById("count");
       const userList = document.getElementById("userList");
+      const userSearch = document.getElementById("userSearch");
 
       function isAdminSession() {
         return (localStorage.getItem("ratil-session") || "").trim().toLowerCase() === ADMIN_EMAIL;
@@ -178,6 +196,7 @@
 
       if (!isAdminSession()) {
         notice.textContent = "غير مصرح لك بعرض هذه الصفحة. سجّل الدخول بحساب المشرف.";
+        userSearch.disabled = true;
         setTimeout(() => location.replace("index.html"), 1800);
         return;
       }
@@ -194,24 +213,30 @@
       function renderUsers(message = "") {
         const users = readUsers();
         const entries = Object.entries(users).filter(([, user]) => user && typeof user === "object");
+        const query = userSearch.value.trim().toLowerCase();
+        const filtered = entries.filter(([key, user]) => {
+          const email = String(user.email || key);
+          const username = String(user.username || "مستخدم");
+          return !query || email.toLowerCase().includes(query) || username.toLowerCase().includes(query);
+        });
+
         count.textContent = `${entries.length} ${entries.length === 1 ? "حساب" : "حسابات"}`;
-        notice.textContent = message || "حساب المشرف محمي ولا يظهر له خيار الحذف.";
+        notice.textContent = message || "يمكنك حذف أي حساب مستخدم؛ حساب المشرف محمي.";
         userList.replaceChildren();
 
-        if (!entries.length) {
+        if (!filtered.length) {
           const empty = document.createElement("div");
           empty.className = "empty";
-          empty.textContent = "لا توجد حسابات محفوظة في هذا المتصفح.";
+          empty.textContent = entries.length ? "لا توجد نتائج تطابق البحث." : "لا توجد حسابات محفوظة في هذا المتصفح.";
           userList.appendChild(empty);
           return;
         }
 
-        for (const [key, user] of entries) {
+        for (const [key, user] of filtered) {
           const email = String(user.email || key).trim();
           const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
           const card = document.createElement("article");
           card.className = "user-card";
-
           const info = document.createElement("div");
           info.className = "user-info";
           const name = document.createElement("div");
@@ -251,7 +276,7 @@
               }
               try {
                 localStorage.setItem("ratil-users", JSON.stringify(latestUsers));
-                renderUsers("تم حذف الحساب.");
+                renderUsers("تم حذف الحساب من هذا المتصفح.");
               } catch {
                 notice.textContent = "تعذّر تحديث الحسابات في هذا المتصفح.";
               }
@@ -262,6 +287,10 @@
         }
       }
 
+      userSearch.addEventListener("input", () => renderUsers());
+      window.addEventListener("storage", event => {
+        if (event.key === "ratil-users") renderUsers("تم تحديث قائمة الحسابات.");
+      });
       renderUsers();
     })();
   </script>
