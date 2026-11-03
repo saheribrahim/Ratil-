@@ -4,229 +4,284 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#10251f">
-  <title>Ratil · المستخدمون المسجلون</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Ratil · إدارة المستخدمين</title>
+
   <style>
     :root {
-      color-scheme: light;
-      --page: #10251f;
-      --page-glow: #1b382e;
-      --card: #f7f8f4;
-      --card-edge: #e2e9e1;
-      --ink: #20372f;
-      --muted: #64776e;
-      --accent: #28775a;
-      --accent-soft: #e8f2eb;
-      --row: #ffffff;
-      --row-edge: #e6ece6;
+      color-scheme: dark;
+      --bg: #102019;
+      --bg-glow: #1b382b;
+      --panel: #1b2b22;
+      --card: #22352a;
+      --line: #354b3c;
+      --text: #edf4ee;
+      --muted: #a4b5a8;
+      --green: #4ab981;
+      --green-soft: #244a35;
+      --red: #d65b4e;
+      --red-hover: #ed6b59;
     }
 
     * { box-sizing: border-box; }
-    html, body { min-height: 100%; margin: 0; }
+
     body {
+      margin: 0;
       min-height: 100vh;
-      padding: clamp(18px, 5vw, 56px) 16px;
-      display: grid;
-      place-items: start center;
-      background: radial-gradient(ellipse at 50% -10%, var(--page-glow), var(--page) 65%);
-      color: var(--ink);
-      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      padding: 28px 16px;
+      background: radial-gradient(ellipse at top, var(--bg-glow), var(--bg) 68%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     }
 
-    main { width: min(100%, 900px); }
+    main { width: min(100%, 760px); margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    h1 { margin: 0; font-size: 25px; }
+    .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+    a {
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 9px 13px;
+      background: var(--panel);
+    }
+
+    a:hover { border-color: var(--green); }
+
     .panel {
-      overflow: hidden;
-      position: relative;
-      padding: clamp(22px, 4vw, 38px);
-      background: var(--card);
-      border: 1px solid var(--card-edge);
-      border-radius: 24px;
-      box-shadow: 0 24px 70px rgba(0, 0, 0, .24), 0 2px 8px rgba(0, 0, 0, .08);
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 19px;
+      background: rgba(27, 43, 34, .96);
+      box-shadow: 0 18px 50px #0004;
     }
-    .panel::before {
-      content: "";
-      position: absolute;
-      inset: 0 0 auto;
-      height: 5px;
-      background: linear-gradient(90deg, #70b58e, #28775a, #174c3d);
-    }
-    .heading {
+
+    .panel-heading {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 18px;
-      margin-bottom: 12px;
-    }
-    h1 {
-      margin: 0;
-      color: var(--ink);
-      font-size: clamp(23px, 4vw, 32px);
-      line-height: 1.35;
-      letter-spacing: -.3px;
-    }
-    .english-title {
-      display: inline-block;
-      margin-inline-start: 7px;
-      color: var(--accent);
-      font-size: .78em;
-      font-weight: 650;
-      direction: ltr;
-      unicode-bidi: isolate;
-    }
-    .subtitle {
-      margin: 0 0 24px;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.8;
-    }
-    .summary {
-      display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
-      margin-bottom: 13px;
-      padding: 12px 15px;
-      background: var(--accent-soft);
-      border: 1px solid #d8e8dc;
-      border-radius: 14px;
-      color: #355b49;
-      font-size: 14px;
+      margin-bottom: 8px;
     }
-    .count {
-      flex: 0 0 auto;
-      min-width: 34px;
-      padding: 4px 11px;
+
+    h2 { margin: 0; font-size: 19px; }
+
+    .count, .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #42644c;
       border-radius: 999px;
-      background: var(--accent);
-      color: #fff;
-      font-weight: 700;
-      text-align: center;
-      direction: ltr;
+      background: var(--green-soft);
+      color: #bcebd0;
+      padding: 5px 10px;
+      font-size: 13px;
+      white-space: nowrap;
     }
-    .users {
-      display: grid;
-      gap: 10px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
+
+    #notice {
+      min-height: 24px;
+      margin: 10px 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
     }
-    .user {
+
+    #userList { display: grid; gap: 11px; }
+
+    .user-card {
       display: flex;
       align-items: center;
-      gap: 13px;
-      min-width: 0;
-      padding: 14px 15px;
-      background: var(--row);
-      border: 1px solid var(--row-edge);
-      border-radius: 15px;
-      box-shadow: 0 2px 6px rgba(32, 55, 47, .035);
-      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
     }
-    .user:hover {
-      border-color: #bed6c6;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(32, 55, 47, .08);
-    }
-    .avatar {
-      display: grid;
-      place-items: center;
-      flex: 0 0 42px;
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
-      background: linear-gradient(145deg, #e1f0e5, #cce4d4);
-      color: #286547;
-      font-size: 18px;
-      font-weight: 750;
-    }
-    .user-details { min-width: 0; display: grid; gap: 4px; }
-    .user-name { color: var(--ink); font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+
+    .user-info { min-width: 0; display: grid; gap: 5px; }
+    .user-name { font-weight: 700; overflow-wrap: anywhere; }
     .user-email {
       color: var(--muted);
-      font-size: 14px;
       direction: ltr;
       text-align: right;
       overflow-wrap: anywhere;
+      font-size: 14px;
     }
+
+    .admin-badge { width: fit-content; }
+
+    .delete-button {
+      border: 1px solid #e27562;
+      border-radius: 10px;
+      padding: 9px 13px;
+      background: var(--red);
+      color: #fff;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background .18s, transform .18s;
+    }
+
+    .delete-button:hover { background: var(--red-hover); transform: translateY(-1px); }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+
     .empty {
-      padding: 22px 16px;
-      border: 1px dashed #cbd8ce;
-      border-radius: 15px;
+      padding: 22px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
       color: var(--muted);
-      background: #fbfcfa;
       text-align: center;
-      line-height: 1.7;
     }
-    @media (max-width: 520px) {
-      body { padding: 18px 12px; }
-      .panel { border-radius: 20px; }
-      .heading { display: block; }
-      .subtitle { margin-bottom: 19px; }
-      .summary { align-items: flex-start; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+
+    @media (max-width: 480px) {
+      .panel { padding: 16px; }
+      .user-card { align-items: flex-start; }
+      .delete-button { width: 100%; }
     }
   </style>
 </head>
+
 <body>
   <main>
-    <section class="panel" aria-labelledby="pageTitle">
-      <header class="heading">
-        <h1 id="pageTitle">المستخدمون المسجلون <span class="english-title">Registered users</span></h1>
-      </header>
-      <p class="subtitle">هذه القائمة تعرض الحسابات المحفوظة في هذا المتصفح فقط، ولا تشمل الأجهزة الأخرى.</p>
-      <div class="summary">
-        <span>إجمالي الحسابات <span dir="ltr">· Total accounts</span></span>
-        <span id="count" class="count" aria-live="polite">0</span>
+    <header>
+      <div>
+        <h1>إدارة المستخدمين</h1>
+        <p class="subtitle">إدارة الحسابات المحفوظة في هذا المتصفح</p>
       </div>
-      <ul id="usersList" class="users" aria-live="polite"></ul>
+      <a href="index.html">العودة للموقع</a>
+    </header>
+
+    <section class="panel" aria-labelledby="usersTitle">
+      <div class="panel-heading">
+        <h2 id="usersTitle">الحسابات المسجلة</h2>
+        <span id="count" class="count">0 حساب</span>
+      </div>
+      <p id="notice" role="status">جارٍ تحميل الحسابات…</p>
+      <div id="userList"></div>
     </section>
   </main>
 
   <script>
     (() => {
-      const list = document.getElementById("usersList");
+      const ADMIN_EMAIL = "ssaheror@gmail.com";
+      const notice = document.getElementById("notice");
       const count = document.getElementById("count");
-      let users = {};
-      try {
-        const stored = JSON.parse(localStorage.getItem("ratil-users") || "{}");
-        if (stored && typeof stored === "object" && !Array.isArray(stored)) users = stored;
-      } catch (_) {}
+      const userList = document.getElementById("userList");
 
-      const entries = Object.entries(users).filter(([, user]) => user && typeof user === "object");
-      count.textContent = String(entries.length);
+      function isAdminSession() {
+        return (localStorage.getItem("ratil-session") || "").toLowerCase() === ADMIN_EMAIL;
+      }
 
-      if (!entries.length) {
-        const empty = document.createElement("li");
-        empty.className = "empty";
-        empty.textContent = "لا توجد حسابات محفوظة في هذا المتصفح.";
-        list.appendChild(empty);
+      if (!isAdminSession()) {
+        notice.textContent = "غير مصرح لك بعرض هذه الصفحة. سجّل الدخول بحساب المشرف.";
+        setTimeout(() => location.replace("index.html"), 1600);
         return;
       }
 
-      for (const [key, user] of entries) {
-        const email = String(user.email || key || "");
-        const username = String(user.username || "مستخدم");
-        const item = document.createElement("li");
-        item.className = "user";
-        const avatar = document.createElement("span");
-        avatar.className = "avatar";
-        avatar.setAttribute("aria-hidden", "true");
-        avatar.textContent = username.trim().charAt(0) || "م";
-        const details = document.createElement("span");
-        details.className = "user-details";
-        const name = document.createElement("span");
-        name.className = "user-name";
-        name.textContent = username;
-        const address = document.createElement("span");
-        address.className = "user-email";
-        address.textContent = email;
-        details.append(name, address);
-        item.append(avatar, details);
-        list.appendChild(item);
+      function readUsers() {
+        try {
+          const value = JSON.parse(localStorage.getItem("ratil-users") || "{}");
+          return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        } catch {
+          return {};
+        }
       }
+
+      function renderUsers(message = "") {
+        const users = readUsers();
+        const entries = Object.entries(users).filter(([, user]) => user && typeof user === "object");
+
+        count.textContent = `${entries.length} حساب`;
+        notice.textContent = message || "حساب المشرف محمي ولا يمكن حذفه من هذه الصفحة.";
+        userList.replaceChildren();
+
+        if (!entries.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "لا توجد حسابات محفوظة في هذا المتصفح.";
+          userList.appendChild(empty);
+          return;
+        }
+
+        for (const [key, user] of entries) {
+          const email = String(user.email || key).trim();
+          const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
+
+          const card = document.createElement("article");
+          card.className = "user-card";
+
+          const info = document.createElement("div");
+          info.className = "user-info";
+
+          const name = document.createElement("div");
+          name.className = "user-name";
+          name.textContent = user.username || "مستخدم";
+
+          const emailNode = document.createElement("div");
+          emailNode.className = "user-email";
+          emailNode.textContent = email;
+
+          info.append(name, emailNode);
+
+          if (isAdmin) {
+            const badge = document.createElement("span");
+            badge.className = "admin-badge";
+            badge.textContent = "حساب المشرف";
+            info.appendChild(badge);
+          }
+
+          card.appendChild(info);
+
+          if (!isAdmin) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "delete-button";
+            button.textContent = "حذف الحساب";
+            button.addEventListener("click", () => {
+              if (!isAdminSession()) {
+                notice.textContent = "انتهت الجلسة أو لا تملك صلاحية الحذف.";
+                return;
+              }
+
+              if (!confirm(`هل تريد حذف حساب ${email} من هذا المتصفح؟`)) return;
+
+              const latestUsers = readUsers();
+              for (const [storedKey, storedUser] of Object.entries(latestUsers)) {
+                const storedEmail = String(storedUser && storedUser.email || storedKey).trim().toLowerCase();
+                if (storedEmail === email.toLowerCase() && storedEmail !== ADMIN_EMAIL) {
+                  delete latestUsers[storedKey];
+                }
+              }
+
+              try {
+                localStorage.setItem("ratil-users", JSON.stringify(latestUsers));
+                renderUsers("تم حذف الحساب.");
+              } catch {
+                notice.textContent = "تعذّر تحديث الحسابات في التخزين المحلي.";
+              }
+            });
+
+            card.appendChild(button);
+          }
+
+          userList.appendChild(card);
+        }
+      }
+
+      renderUsers();
     })();
   </script>
 </body>
