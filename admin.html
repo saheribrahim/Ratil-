@@ -1,58 +1,140 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>Ratil · Admin</title>
+  <meta name="theme-color" content="#101814">
+  <title>Ratil · إدارة الحسابات</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .admin-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px}
-    .admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    #notice{color:var(--mute)}
-    .danger{background:#a83232;color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+    :root{color-scheme:dark;--bg:#101814;--card:#18231d;--ink:#e8efe9;--mute:#93a39a;--line:#2a3a31;--accent:#3fbf93;--danger:#d95c55;--danger-hover:#eb6b63}
+    body{min-height:100vh;background:radial-gradient(ellipse at top,#1b3026 0%,var(--bg) 58%);color:var(--ink)}
+    main{max-width:760px;padding:24px 16px 48px}
+    .admin-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:8px 0 22px}
+    h1{font-size:25px;margin:0 0 5px}.sub{color:var(--mute);margin:0}
+    .back-link{display:inline-flex;align-items:center;gap:8px;color:var(--ink);text-decoration:none;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#1a2820;transition:.2s}
+    .back-link:hover{border-color:var(--accent);transform:translateY(-1px)}
+    .admin-card{background:linear-gradient(145deg,rgba(30,48,38,.96),rgba(22,34,27,.98));border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 18px 55px #0004}
+    .card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h2{margin:0;font-size:19px}.badge{display:inline-flex;align-items:center;gap:7px;border:1px solid #315541;background:#1d382b;color:#9be0bd;border-radius:999px;padding:6px 11px;font-size:13px}
+    #notice{color:var(--mute);line-height:1.7;margin:12px 0 18px}
+    .user-list{display:grid;gap:11px}
+    .user-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:#121c16;border:1px solid var(--line);border-radius:15px;padding:14px 15px;transition:border-color .2s,transform .2s}
+    .user-row:hover{border-color:#42624e;transform:translateY(-1px)}
+    .user-info{min-width:0;display:grid;gap:4px}.user-name{font-weight:650;overflow-wrap:anywhere}.user-email{font-size:13px;color:var(--mute);direction:ltr;text-align:right;overflow-wrap:anywhere}
+    .admin-badge{font-size:12px;color:#a6e8c8;background:#1c382a;border:1px solid #315541;border-radius:999px;padding:4px 9px;width:max-content}
+    .delete-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#bd4843,#963532);color:#fff;border:1px solid #da655d;border-radius:11px;padding:9px 13px;font:inherit;font-size:14px;font-weight:650;cursor:pointer;box-shadow:0 5px 14px #9f393333;transition:transform .16s,filter .16s,box-shadow .16s;white-space:nowrap}
+    .delete-btn:hover{filter:brightness(1.12);transform:translateY(-2px);box-shadow:0 8px 18px #9f393355}
+    .delete-btn:active{transform:translateY(0) scale(.97)}.delete-btn:focus-visible,.back-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .empty{color:var(--mute);text-align:center;padding:24px 10px;border:1px dashed var(--line);border-radius:14px}
+    @media(max-width:480px){.admin-card{padding:17px}.user-row{align-items:flex-start}.delete-btn{width:100%}}
   </style>
 </head>
 <body>
 <main>
-  <div class="admin-head">
-    <div><h1>Ratil · Admin</h1><div class="sub">لوحة إدارة المستخدمين</div></div>
-    <a href="index.html" style="color:var(--accent)">العودة للموقع</a>
-  </div>
-  <section class="admin-card">
-    <h2>حذف جميع الحسابات وتسجيل خروج المشرف</h2>
-    <p id="notice">جارٍ التحقق من الحساب…</p>
-    <p>سيحذف هذا الإجراء كل الحسابات المحلية، بما فيها حساب المشرف، من هذا المتصفح فقط، ثم يسجّل خروجك. لا يمكن التراجع عن الحذف.</p>
-    <button id="clearAll" class="danger" type="button" hidden>حذف كل الحسابات وتسجيل الخروج</button>
+  <header class="admin-head">
+    <div><h1>Ratil · الإدارة</h1><p class="sub">إدارة الحسابات المحفوظة في هذا المتصفح</p></div>
+    <a class="back-link" href="index.html">← <span>العودة للموقع</span></a>
+  </header>
+  <section class="admin-card" aria-labelledby="usersTitle">
+    <div class="card-heading"><h2 id="usersTitle">الحسابات</h2><span id="count" class="badge">جارٍ التحميل…</span></div>
+    <p id="notice" role="status">جارٍ التحقق من حساب المشرف…</p>
+    <div id="usersArea" class="user-list"></div>
   </section>
 </main>
 <script>
 (() => {
   const ADMIN_EMAIL = "ssaheror@gmail.com";
   const notice = document.getElementById("notice");
-  const clearButton = document.getElementById("clearAll");
-  const sessionEmail = (localStorage.getItem("ratil-session") || "").toLowerCase();
-  if (sessionEmail !== ADMIN_EMAIL) {
-    notice.textContent = "غير مصرح لك. يجب تسجيل الدخول بحساب المشرف.";
-    setTimeout(() => { window.location.replace("index.html"); }, 1600);
+  const usersArea = document.getElementById("usersArea");
+  const count = document.getElementById("count");
+
+  function isAdminSession() {
+    return (localStorage.getItem("ratil-session") || "").toLowerCase() === ADMIN_EMAIL;
+  }
+  if (!isAdminSession()) {
+    count.textContent = "غير متاح";
+    notice.textContent = "غير مصرح لك بعرض هذه الصفحة. سجّل الدخول بحساب المشرف.";
+    setTimeout(() => window.location.replace("index.html"), 1600);
     return;
   }
-  notice.textContent = "تم التحقق من جلسة المشرف. الحسابات محفوظة في هذا المتصفح فقط.";
-  clearButton.hidden = false;
-  clearButton.addEventListener("click", () => {
-    if ((localStorage.getItem("ratil-session") || "").toLowerCase() !== ADMIN_EMAIL) {
-      notice.textContent = "غير مصرح لك بهذا الإجراء.";
-      clearButton.hidden = true;
+
+  function readUsers() {
+    try {
+      const users = JSON.parse(localStorage.getItem("ratil-users") || "{}");
+      return users && typeof users === "object" && !Array.isArray(users) ? users : {};
+    } catch (_) { return {}; }
+  }
+
+  function renderUsers(message) {
+    const users = readUsers();
+    const entries = Object.entries(users).filter(([, user]) => user && typeof user === "object");
+    count.textContent = `${entries.length} حساب`;
+    notice.textContent = message || "اختر الحساب الذي تريد حذفه. حساب المشرف محمي من الحذف هنا. القائمة محلية لهذا المتصفح فقط.";
+    usersArea.replaceChildren();
+    if (!entries.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "لا توجد حسابات محفوظة في هذا المتصفح.";
+      usersArea.appendChild(empty);
       return;
     }
-    const confirmed = window.confirm("تأكيد نهائي: سيتم حذف جميع الحسابات بما فيها حساب المشرف من هذا المتصفح، ثم تسجيل خروجك. هل تريد المتابعة؟");
-    if (!confirmed) return;
-    localStorage.removeItem("ratil-users");
-    localStorage.removeItem("ratil-session");
-    notice.textContent = "تم حذف جميع الحسابات المحلية وتسجيل الخروج. سيتم تحويلك إلى الموقع.";
-    clearButton.hidden = true;
-    setTimeout(() => { window.location.replace("index.html"); }, 1200);
-  });
+
+    for (const [key, user] of entries) {
+      const email = String(user.email || key).trim().toLowerCase();
+      const isAdmin = email === ADMIN_EMAIL;
+      const row = document.createElement("article");
+      row.className = "user-row";
+      const info = document.createElement("div");
+      info.className = "user-info";
+      const name = document.createElement("div");
+      name.className = "user-name";
+      name.textContent = user.username || "مستخدم";
+      const emailText = document.createElement("div");
+      emailText.className = "user-email";
+      emailText.textContent = user.email || key;
+      info.append(name, emailText);
+      if (isAdmin) {
+        const tag = document.createElement("span");
+        tag.className = "admin-badge";
+        tag.textContent = "حساب المشرف";
+        info.appendChild(tag);
+      }
+      row.appendChild(info);
+
+      if (!isAdmin) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "delete-btn";
+        button.innerHTML = "<span aria-hidden=\"true\">🗑</span><span>حذف الحساب</span>";
+        button.setAttribute("aria-label", `حذف حساب ${user.email || key}`);
+        button.addEventListener("click", () => {
+          if (!isAdminSession()) {
+            notice.textContent = "انتهت صلاحية الجلسة أو لا تملك الإذن.";
+            return;
+          }
+          if (!window.confirm(`هل تريد حذف حساب ${user.email || key} من هذا المتصفح؟`)) return;
+          const latest = readUsers();
+          for (const [storedKey, storedUser] of Object.entries(latest)) {
+            const storedEmail = String(storedUser && storedUser.email || storedKey).trim().toLowerCase();
+            if (storedEmail === email) delete latest[storedKey];
+          }
+          try {
+            localStorage.setItem("ratil-users", JSON.stringify(latest));
+            if ((localStorage.getItem("ratil-session") || "").toLowerCase() === email) localStorage.removeItem("ratil-session");
+            renderUsers(`تم حذف الحساب ${email}.`);
+          } catch (_) {
+            notice.textContent = "تعذر الحذف من التخزين المحلي لهذا المتصفح.";
+          }
+        });
+        row.appendChild(button);
+      }
+      usersArea.appendChild(row);
+    }
+  }
+
+  renderUsers();
 })();
 </script>
 </body>
