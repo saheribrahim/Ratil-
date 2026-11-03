@@ -4,90 +4,88 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#102019">
   <title>Ratil · إدارة المستخدمين</title>
-
   <style>
     :root {
       color-scheme: dark;
-      --bg: #102019;
-      --bg-glow: #1b382b;
-      --panel: #1b2b22;
-      --card: #22352a;
-      --line: #354b3c;
-      --text: #edf4ee;
-      --muted: #a4b5a8;
-      --green: #4ab981;
-      --green-soft: #244a35;
-      --red: #d65b4e;
-      --red-hover: #ed6b59;
+      --page: #0c1d17;
+      --page-glow: #18382b;
+      --surface: #f7f9f6;
+      --surface-border: #dce5dd;
+      --card: #ffffff;
+      --ink: #20372d;
+      --muted: #52665a;
+      --green: #23734d;
+      --green-soft: #e6f2e9;
+      --line: #dce5dd;
+      --danger: #c64035;
+      --danger-hover: #a92e26;
     }
 
     * { box-sizing: border-box; }
-
     body {
-      margin: 0;
       min-height: 100vh;
-      padding: 28px 16px;
-      background: radial-gradient(ellipse at top, var(--bg-glow), var(--bg) 68%);
-      color: var(--text);
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: clamp(20px, 5vw, 48px) 16px;
+      background: radial-gradient(ellipse at top, var(--page-glow), var(--page) 68%);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
     }
-
-    main { width: min(100%, 760px); margin: 0 auto; }
-
+    main { width: min(100%, 900px); margin: 0 auto; }
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 16px;
       flex-wrap: wrap;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
+      color: #f2f7f3;
     }
-
-    h1 { margin: 0; font-size: 25px; }
-    .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
-
-    a {
-      color: var(--text);
-      text-decoration: none;
-      border: 1px solid var(--line);
+    h1 { margin: 0; font-size: clamp(23px, 4vw, 30px); }
+    .subtitle { margin: 6px 0 0; color: #c3d2c8; font-size: 14px; }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid #496052;
       border-radius: 11px;
-      padding: 9px 13px;
-      background: var(--panel);
+      background: #1b3025;
+      color: #f2f7f3;
+      text-decoration: none;
     }
-
-    a:hover { border-color: var(--green); }
-
+    .back-link:hover { border-color: #9dc7aa; }
     .panel {
-      padding: 22px;
-      border: 1px solid var(--line);
-      border-radius: 19px;
-      background: rgba(27, 43, 34, .96);
-      box-shadow: 0 18px 50px #0004;
+      overflow: hidden;
+      padding: clamp(20px, 4vw, 32px);
+      border: 1px solid var(--surface-border);
+      border-radius: 22px;
+      background: var(--surface);
+      box-shadow: 0 22px 60px #0005;
     }
-
     .panel-heading {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
       margin-bottom: 8px;
     }
-
-    h2 { margin: 0; font-size: 19px; }
-
+    h2 { margin: 0; color: var(--ink); font-size: 20px; }
     .count, .admin-badge {
       display: inline-flex;
       align-items: center;
-      border: 1px solid #42644c;
+      justify-content: center;
+      min-height: 30px;
+      padding: 5px 11px;
+      border: 1px solid #b9d9c2;
       border-radius: 999px;
       background: var(--green-soft);
-      color: #bcebd0;
-      padding: 5px 10px;
+      color: #205b3b;
       font-size: 13px;
+      font-weight: 700;
       white-space: nowrap;
     }
-
     #notice {
       min-height: 24px;
       margin: 10px 0 16px;
@@ -95,78 +93,71 @@
       font-size: 14px;
       line-height: 1.7;
     }
-
     #userList { display: grid; gap: 11px; }
-
     .user-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
       flex-wrap: wrap;
-      padding: 14px;
+      padding: 15px;
       border: 1px solid var(--line);
-      border-radius: 14px;
+      border-radius: 15px;
       background: var(--card);
+      box-shadow: 0 2px 7px #1835270c;
     }
-
-    .user-info { min-width: 0; display: grid; gap: 5px; }
-    .user-name { font-weight: 700; overflow-wrap: anywhere; }
+    .user-info { display: grid; gap: 6px; min-width: 0; }
+    .user-name { color: var(--ink); font-size: 16px; font-weight: 750; overflow-wrap: anywhere; }
     .user-email {
-      color: var(--muted);
+      color: #455b4d;
       direction: ltr;
       text-align: right;
-      overflow-wrap: anywhere;
       font-size: 14px;
+      overflow-wrap: anywhere;
     }
-
-    .admin-badge { width: fit-content; }
-
+    .admin-badge { width: fit-content; margin-top: 2px; }
     .delete-button {
-      border: 1px solid #e27562;
+      min-height: 40px;
+      padding: 9px 14px;
+      border: 1px solid var(--danger);
       border-radius: 10px;
-      padding: 9px 13px;
-      background: var(--red);
+      background: var(--danger);
       color: #fff;
       font: inherit;
       font-size: 14px;
-      font-weight: 650;
+      font-weight: 700;
       cursor: pointer;
-      transition: background .18s, transform .18s;
     }
-
-    .delete-button:hover { background: var(--red-hover); transform: translateY(-1px); }
-    button:focus-visible, a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
-
+    .delete-button:hover { background: var(--danger-hover); border-color: var(--danger-hover); }
     .empty {
       padding: 22px;
-      border: 1px dashed var(--line);
+      border: 1px dashed #b9c9bd;
       border-radius: 14px;
-      color: var(--muted);
+      background: #fff;
+      color: #455b4d;
       text-align: center;
     }
-
-    @media (max-width: 480px) {
-      .panel { padding: 16px; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #78b98b; outline-offset: 3px; }
+    @media (max-width: 520px) {
+      .panel { padding: 18px; }
       .user-card { align-items: flex-start; }
       .delete-button { width: 100%; }
     }
   </style>
 </head>
-
 <body>
   <main>
     <header>
       <div>
         <h1>إدارة المستخدمين</h1>
-        <p class="subtitle">إدارة الحسابات المحفوظة في هذا المتصفح</p>
+        <p class="subtitle">الحسابات المسجلة في هذا المتصفح</p>
       </div>
-      <a href="index.html">العودة للموقع</a>
+      <a class="back-link" href="index.html">العودة للموقع</a>
     </header>
 
     <section class="panel" aria-labelledby="usersTitle">
       <div class="panel-heading">
-        <h2 id="usersTitle">الحسابات المسجلة</h2>
+        <h2 id="usersTitle">المستخدمون المسجلون</h2>
         <span id="count" class="count">0 حساب</span>
       </div>
       <p id="notice" role="status">جارٍ تحميل الحسابات…</p>
@@ -182,19 +173,19 @@
       const userList = document.getElementById("userList");
 
       function isAdminSession() {
-        return (localStorage.getItem("ratil-session") || "").toLowerCase() === ADMIN_EMAIL;
+        return (localStorage.getItem("ratil-session") || "").trim().toLowerCase() === ADMIN_EMAIL;
       }
 
       if (!isAdminSession()) {
         notice.textContent = "غير مصرح لك بعرض هذه الصفحة. سجّل الدخول بحساب المشرف.";
-        setTimeout(() => location.replace("index.html"), 1600);
+        setTimeout(() => location.replace("index.html"), 1800);
         return;
       }
 
       function readUsers() {
         try {
-          const value = JSON.parse(localStorage.getItem("ratil-users") || "{}");
-          return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+          const parsed = JSON.parse(localStorage.getItem("ratil-users") || "{}");
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
         } catch {
           return {};
         }
@@ -203,9 +194,8 @@
       function renderUsers(message = "") {
         const users = readUsers();
         const entries = Object.entries(users).filter(([, user]) => user && typeof user === "object");
-
-        count.textContent = `${entries.length} حساب`;
-        notice.textContent = message || "حساب المشرف محمي ولا يمكن حذفه من هذه الصفحة.";
+        count.textContent = `${entries.length} ${entries.length === 1 ? "حساب" : "حسابات"}`;
+        notice.textContent = message || "حساب المشرف محمي ولا يظهر له خيار الحذف.";
         userList.replaceChildren();
 
         if (!entries.length) {
@@ -219,30 +209,25 @@
         for (const [key, user] of entries) {
           const email = String(user.email || key).trim();
           const isAdmin = email.toLowerCase() === ADMIN_EMAIL;
-
           const card = document.createElement("article");
           card.className = "user-card";
 
           const info = document.createElement("div");
           info.className = "user-info";
-
           const name = document.createElement("div");
           name.className = "user-name";
-          name.textContent = user.username || "مستخدم";
-
-          const emailNode = document.createElement("div");
-          emailNode.className = "user-email";
-          emailNode.textContent = email;
-
-          info.append(name, emailNode);
+          name.textContent = String(user.username || "مستخدم");
+          const address = document.createElement("div");
+          address.className = "user-email";
+          address.textContent = email;
+          info.append(name, address);
 
           if (isAdmin) {
             const badge = document.createElement("span");
             badge.className = "admin-badge";
-            badge.textContent = "حساب المشرف";
+            badge.textContent = "حساب المشرف · محمي";
             info.appendChild(badge);
           }
-
           card.appendChild(info);
 
           if (!isAdmin) {
@@ -252,10 +237,9 @@
             button.textContent = "حذف الحساب";
             button.addEventListener("click", () => {
               if (!isAdminSession()) {
-                notice.textContent = "انتهت الجلسة أو لا تملك صلاحية الحذف.";
+                notice.textContent = "انتهت الجلسة؛ سجّل الدخول مجددًا بحساب المشرف.";
                 return;
               }
-
               if (!confirm(`هل تريد حذف حساب ${email} من هذا المتصفح؟`)) return;
 
               const latestUsers = readUsers();
@@ -265,18 +249,15 @@
                   delete latestUsers[storedKey];
                 }
               }
-
               try {
                 localStorage.setItem("ratil-users", JSON.stringify(latestUsers));
                 renderUsers("تم حذف الحساب.");
               } catch {
-                notice.textContent = "تعذّر تحديث الحسابات في التخزين المحلي.";
+                notice.textContent = "تعذّر تحديث الحسابات في هذا المتصفح.";
               }
             });
-
             card.appendChild(button);
           }
-
           userList.appendChild(card);
         }
       }
