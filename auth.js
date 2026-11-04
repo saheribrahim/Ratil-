@@ -1,150 +1,49 @@
-// Accounts are stored in this browser only by default.
-// If you publish a Google Apps Script backend, set CFG.remoteApi to your deployment URL.
-// This lets users register/login from any device and makes the admin panel read a shared list.
+// Shared authentication backed by the Google Apps Script web app in Code.gs.
+// Set this URL after deploying the Apps Script as a Web App.
 const CFG = {
-  service: "YOUR_SERVICE_ID",
-  template: "YOUR_TEMPLATE_ID",
-  key: "YOUR_PUBLIC_KEY",
-  owner: "ssaheror@gmail.com",
   adminEmail: "ssaheror@gmail.com",
-  adminUsername: "Admin",
-  adminPassword: "Admin123!",
   remoteApi: "https://script.google.com/macros/s/PASTE_YOUR_DEPLOYMENT_ID/exec"
 };
 
-let U = {};
-try {
-  U = JSON.parse(localStorage.getItem("ratil-users") || "{}");
-} catch (_) {}
-
-const saveU = () => {
-  try {
-    localStorage.setItem("ratil-users", JSON.stringify(U));
-  } catch (_) {}
-};
-
-function ensureLocalAdminUser() {
-  const email = String(CFG.adminEmail || "").toLowerCase();
-  if (!email) return;
-
-  if (!U[email]) {
-    U[email] = {
-      email,
-      username: CFG.adminUsername,
-      password: CFG.adminPassword,
-      admin: true
-    };
-    saveU();
-  }
-}
-
-function resetLocalAdminUser() {
-  const email = String(CFG.adminEmail || "").toLowerCase();
-  if (!email) return;
-
-  U[email] = {
-    email,
-    username: CFG.adminUsername,
-    password: CFG.adminPassword,
-    admin: true
-  };
-  saveU();
-}
-
-const am = (t, e) => {
-  $("aMsg").textContent = t;
-  $("aMsg").className = e ? "err" : "";
-};
-
+const SESSION_KEY = "ratil-session-token";
+let currentUser = null;
+let currentIsAdmin = false;
 let mode = "login";
 
-function isAdminUser(u) {
-  return !!u && String(u.email || "").toLowerCase() === CFG.adminEmail.toLowerCase();
+const am = (message, isError) => {
+  $("aMsg").textContent = message;
+  $("aMsg").className = isError ? "err" : "";
+};
+
+function configured() {
+  return CFG.remoteApi && !CFG.remoteApi.includes("PASTE_YOUR_DEPLOYMENT_ID");
 }
 
-function setMode(m) {
-  mode = m;
-  $("tL").classList.toggle("primary", m === "login");
-  $("tS").classList.toggle("primary", m === "signup");
-  $("aU").style.display = m === "signup" ? "" : "none";
-  $("aE").placeholder = m === "signup" ? "Email / البريد الإلكتروني" : "Email / البريد الإلكتروني";
-  $("aGo").textContent = m === "signup" ? "Create account إنشاء حساب" : "Log in دخول";
-  $("aP").value = "";
-}
-
-async function hp(p, salt) {
-  try {
-    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + p));
-    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join("");
-  } catch (_) {
-    return "";
-  }
-}
-
-async function sendMail(to, subject, message) {
-  if (!CFG.service || !CFG.template || !CFG.key) return false;
-  try {
-    const r = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service_id: CFG.service, template_id: CFG.template, user_id: CFG.key, template_params: { to, subject, message } })
-    });
-    return r.ok;
-  } catch (_) {
-    return false;
-  }
-}
-
-async function requestApi(payload) {
-  if (!CFG.remoteApi || CFG.remoteApi.includes("PASTE_YOUR_DEPLOYMENT_ID")) {
-    return { ok: false, error: "Set CFG.remoteApi to your Google Apps Script deployment URL" };
-  }
-
-  try {
-    const res = await fetch(CFG.remoteApi, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    return await res.json();
-  } catch (err) {
-    return { ok: false, error: err.message || "Request failed" };
-  }
-}
-
-async function loadUsersFromRemote() {
-  if (!CFG.remoteApi || CFG.remoteApi.includes("PASTE_YOUR_DEPLOYMENT_ID")) {
-    return { ok: false, users: [] };
-  }
-
-  try {
-    const res = await fetch(`${CFG.remoteApi}?action=list`);
-    return await res.json();
-  } catch (_) {
-    return { ok: false, users: [] };
-  }
-}
-
-function mergeRemoteUsers(users) {
-  const map = {};
-  (Array.isArray(users) ? users : []).forEach(u => {
-    if (u && (u.email || u.username)) {
-      map[String(u.email || u.username).toLowerCase()] = u;
-    }
+async function api(payload) {
+  if (!configured()) throw new Error("Shared login is not connected yet. Deploy Code.gs and set its URL in auth.js.");
+  const response = await fetch(CFG.remoteApi, {
+    method: "POST",
+    // text/plain avoids a browser preflight request for this simple Apps Script endpoint.
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
   });
-  U = map;
-  saveU();
+  if (!response.ok) throw new Error("Could not reach the shared account service.");
+  return response.json();
 }
 
-async function refreshRemoteUsers() {
-  const remote = await loadUsersFromRemote();
-  if (remote && remote.ok && Array.isArray(remote.users)) {
-    mergeRemoteUsers(remote.users);
-  }
+function setMode(value) {
+  mode = value;
+  $("tL").classList.toggle("primary", mode === "login");
+  $("tS").classList.toggle("primary", mode === "signup");
+  $("aU").style.display = mode === "signup" ? "" : "none";
+  $("aGo").textContent = mode === "signup" ? "Create account إنشاء حساب" : "Log in دخول";
+  $("aP").value = "";
+  am("", false);
 }
 
 function ensureAdminUI() {
-  let button = $("adminToggle"), panel = $("adminPanel");
+  let button = $("adminToggle");
+  let panel = $("adminPanel");
   if (!button) {
     button = document.createElement("button");
     button.id = "adminToggle";
@@ -152,82 +51,79 @@ function ensureAdminUI() {
     button.className = "primary";
     button.textContent = "Admin panel لوحة الإدارة";
     button.onclick = async () => {
-      $("adminPanel").style.display = $("adminPanel").style.display === "none" ? "block" : "none";
-      await renderAdminUsers();
+      panel.style.display = panel.style.display === "none" ? "block" : "none";
+      if (panel.style.display === "block") await renderAdminUsers();
     };
-    document.body.appendChild(button);
+    $("me").appendChild(button);
   }
   if (!panel) {
     panel = document.createElement("div");
     panel.id = "adminPanel";
-    panel.style.display = "none";
-    panel.style.marginTop = "20px";
-    panel.style.padding = "16px";
-    panel.style.border = "1px solid #ddd";
-    panel.style.borderRadius = "12px";
-    panel.style.background = "#fff";
-    document.body.appendChild(panel);
+    panel.style.cssText = "display:none;margin-top:16px;padding:16px;border:1px solid #ddd;border-radius:12px;background:#fff";
+    $("me").appendChild(panel);
   }
+}
+
+function setAdminVisibility() {
+  ensureAdminUI();
+  $("adminToggle").style.display = currentIsAdmin ? "inline-block" : "none";
+  $("adminPanel").style.display = "none";
+}
+
+function enter(user, token, isAdmin) {
+  currentUser = user;
+  currentIsAdmin = Boolean(isAdmin) || String(user.email || "").toLowerCase() === CFG.adminEmail.toLowerCase();
+  try { localStorage.setItem(SESSION_KEY, token); } catch (_) {}
+  $("auth").style.display = "none";
+  $("me").style.display = "block";
+  $("who").textContent = user.username || user.email;
+  setAdminVisibility();
 }
 
 async function renderAdminUsers() {
   const panel = $("adminPanel");
-  if (!panel) return;
-
   panel.replaceChildren();
-
   const title = document.createElement("h2");
   title.textContent = "المستخدمون المسجلون";
   panel.appendChild(title);
 
-  const remote = await loadUsersFromRemote();
-  const users = remote && remote.ok && Array.isArray(remote.users) ? remote.users : Object.values(U);
-
-  if (!users.length) {
-    const empty = document.createElement("p");
-    empty.textContent = "لا يوجد مستخدمون";
-    panel.appendChild(empty);
-    return;
+  try {
+    const result = await api({ action: "list", token: localStorage.getItem(SESSION_KEY) });
+    if (!result.ok) throw new Error(result.error || "تعذر تحميل المستخدمين");
+    const users = result.users || [];
+    if (!users.length) {
+      const empty = document.createElement("p");
+      empty.textContent = "لا يوجد مستخدمون مسجلون بعد.";
+      panel.appendChild(empty);
+      return;
+    }
+    const list = document.createElement("ul");
+    users.forEach(user => {
+      const item = document.createElement("li");
+      item.textContent = `${user.username} • ${user.email}`;
+      list.appendChild(item);
+    });
+    panel.appendChild(list);
+  } catch (error) {
+    const message = document.createElement("p");
+    message.textContent = error.message;
+    panel.appendChild(message);
   }
-
-  const list = document.createElement("ul");
-  users.forEach(u => {
-    const li = document.createElement("li");
-    li.textContent = `${u.username || "Unknown"} • ${u.email || ""}`;
-    list.appendChild(li);
-  });
-
-  panel.appendChild(list);
 }
 
-function setAdminVisibility(u) {
-  ensureAdminUI();
-  const button = $("adminToggle");
-  const panel = $("adminPanel");
-  const admin = isAdminUser(u);
-  button.style.display = admin ? "inline-block" : "none";
-  panel.style.display = "none";
-}
-
-function enter(u) {
-  $("auth").style.display = "none";
-  $("me").style.display = "block";
-  $("who").textContent = u.username || u.email || "User";
-  try {
-    localStorage.setItem("ratil-session", u.email || "");
-  } catch (_) {}
-  setAdminVisibility(u);
-}
-
-$("out").onclick = () => {
-  stop();
-  try {
-    localStorage.removeItem("ratil-session");
-  } catch (_) {}
+$("out").onclick = async () => {
+  const token = localStorage.getItem(SESSION_KEY);
+  if (token) {
+    try { await api({ action: "logout", token }); } catch (_) {}
+  }
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+  currentUser = null;
+  currentIsAdmin = false;
+  if (typeof stop === "function") stop();
   $("me").style.display = "none";
   $("auth").style.display = "flex";
   $("aP").value = "";
-  setAdminVisibility(null);
+  setAdminVisibility();
   setMode("login");
 };
 
@@ -235,92 +131,48 @@ $("tL").onclick = () => setMode("login");
 $("tS").onclick = () => setMode("signup");
 
 $("aGo").onclick = async () => {
-  const id = $("aE").value.trim();
-  const pw = $("aP").value;
-
-  if (!id || !pw) {
-    am("Please enter email and password • أدخل البريد وكلمة المرور", true);
-    return;
+  const email = $("aE").value.trim().toLowerCase();
+  const password = $("aP").value;
+  const username = $("aU").value.trim();
+  if (!email || !password) return am("أدخل البريد الإلكتروني وكلمة المرور.", true);
+  if (mode === "signup" && (!username || password.length < 8)) {
+    return am("أدخل اسم مستخدم وكلمة مرور من 8 أحرف على الأقل.", true);
   }
 
-  const email = id.toLowerCase();
+  const button = $("aGo");
+  button.disabled = true;
+  try {
+    const result = mode === "signup"
+      ? await api({ action: "signup", email, username, password })
+      : await api({ action: "login", email, password });
+    if (!result.ok) return am(result.error || "تعذر إكمال الطلب.", true);
 
-  if (mode === "signup") {
-    const un = $("aU").value.trim();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      am("Invalid email format • صيغة البريد غير صحيحة", true);
-      return;
-    }
-
-    if (!un) {
-      am("Username is required • الاسم مطلوب", true);
-      return;
-    }
-
-    const result = await requestApi({
-      action: "signup",
-      email,
-      username: un,
-      password: pw
-    });
-
-    if (result.ok) {
-      am("تم إنشاء الحساب بنجاح", false);
-      await refreshRemoteUsers();
+    if (mode === "signup") {
+      am("تم إنشاء الحساب. سجّل الدخول الآن من أي جهاز باستخدام نفس البريد وكلمة المرور.", false);
       setMode("login");
-      $("aP").value = "";
-      return;
+      $("aE").value = email;
+    } else {
+      enter(result.user, result.token, result.isAdmin);
     }
-
-    am(result.error || "فشل إنشاء الحساب", true);
-    return;
+  } catch (error) {
+    am(error.message || "تعذر الاتصال بخدمة الحسابات.", true);
+  } finally {
+    button.disabled = false;
   }
-
-  const localUser = Object.values(U).find(u => {
-    const emailOk = String(u.email || "").toLowerCase() === email;
-    const passOk = String(u.password || "") === pw || String(u.passwordHash || "") === pw;
-    return emailOk && passOk;
-  });
-
-  if (localUser) {
-    enter(localUser);
-    return;
-  }
-
-  const result = await requestApi({
-    action: "login",
-    email,
-    password: pw
-  });
-
-  if (result.ok) {
-    enter({
-      email: result.user.email,
-      username: result.user.username
-    });
-    return;
-  }
-
-  am("Wrong email/username or password • البريد أو كلمة المرور غير صحيحة", true);
 };
 
 ensureAdminUI();
-ensureLocalAdminUser();
+setAdminVisibility();
+setMode("login");
 
-(async () => {
+(async function restoreSession() {
+  const token = localStorage.getItem(SESSION_KEY);
+  if (!token) return;
   try {
-    const remote = await loadUsersFromRemote();
-    if (remote && remote.ok && Array.isArray(remote.users)) {
-      mergeRemoteUsers(remote.users);
-    }
-  } catch (_) {}
-
-  try {
-    const s = localStorage.getItem("ratil-session");
-    if (s && U[s]) {
-      enter(U[s]);
-    }
-  } catch (_) {}
-
-  setMode("login");
+    const result = await api({ action: "session", token });
+    if (result.ok) enter(result.user, token, result.isAdmin);
+    else localStorage.removeItem(SESSION_KEY);
+  } catch (_) {
+    // Keep the sign-in form visible if the backend is not yet configured or unreachable.
+  }
 })();
