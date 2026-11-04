@@ -7,6 +7,8 @@ const CFG = {
   key: "YOUR_PUBLIC_KEY",
   owner: "ssaheror@gmail.com",
   adminEmail: "ssaheror@gmail.com",
+  adminUsername: "Admin",
+  adminPassword: "Admin123!",
   remoteApi: "https://script.google.com/macros/s/PASTE_YOUR_DEPLOYMENT_ID/exec"
 };
 
@@ -20,6 +22,34 @@ const saveU = () => {
     localStorage.setItem("ratil-users", JSON.stringify(U));
   } catch (_) {}
 };
+
+function ensureLocalAdminUser() {
+  const email = String(CFG.adminEmail || "").toLowerCase();
+  if (!email) return;
+
+  if (!U[email]) {
+    U[email] = {
+      email,
+      username: CFG.adminUsername,
+      password: CFG.adminPassword,
+      admin: true
+    };
+    saveU();
+  }
+}
+
+function resetLocalAdminUser() {
+  const email = String(CFG.adminEmail || "").toLowerCase();
+  if (!email) return;
+
+  U[email] = {
+    email,
+    username: CFG.adminUsername,
+    password: CFG.adminPassword,
+    admin: true
+  };
+  saveU();
+}
 
 const am = (t, e) => {
   $("aMsg").textContent = t;
@@ -213,11 +243,11 @@ $("aGo").onclick = async () => {
     return;
   }
 
+  const email = id.toLowerCase();
+
   if (mode === "signup") {
     const un = $("aU").value.trim();
-    const em = id.toLowerCase();
-
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       am("Invalid email format • صيغة البريد غير صحيحة", true);
       return;
     }
@@ -229,7 +259,7 @@ $("aGo").onclick = async () => {
 
     const result = await requestApi({
       action: "signup",
-      email: em,
+      email,
       username: un,
       password: pw
     });
@@ -246,9 +276,20 @@ $("aGo").onclick = async () => {
     return;
   }
 
+  const localUser = Object.values(U).find(u => {
+    const emailOk = String(u.email || "").toLowerCase() === email;
+    const passOk = String(u.password || "") === pw || String(u.passwordHash || "") === pw;
+    return emailOk && passOk;
+  });
+
+  if (localUser) {
+    enter(localUser);
+    return;
+  }
+
   const result = await requestApi({
     action: "login",
-    email: id.toLowerCase(),
+    email,
     password: pw
   });
 
@@ -260,21 +301,11 @@ $("aGo").onclick = async () => {
     return;
   }
 
-  const localUser = Object.values(U).find(u => {
-    const emailOk = String(u.email || "").toLowerCase() === id.toLowerCase();
-    const passOk = String(u.password || "") === pw || String(u.passwordHash || "") === pw;
-    return emailOk && passOk;
-  });
-
-  if (localUser) {
-    enter(localUser);
-    return;
-  }
-
   am("Wrong email/username or password • البريد أو كلمة المرور غير صحيحة", true);
 };
 
 ensureAdminUI();
+ensureLocalAdminUser();
 
 (async () => {
   try {
