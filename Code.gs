@@ -1,6 +1,6 @@
 // Google Apps Script backend for Ratil shared accounts.
 // Bind this script to the Google Sheet that will store accounts, then configure
-// ADMIN_EMAIL, ADMIN_PASSWORD, and AUTH_SECRET in Project Settings > Script properties.
+// ADMIN_EMAIL, ADMIN_USERNAME, ADMIN_PASSWORD, and AUTH_SECRET in Script properties.
 const USERS_SHEET = "users";
 const SESSIONS_SHEET = "sessions";
 const SESSION_DAYS = 30;
@@ -22,6 +22,7 @@ function handleRequest_(request) {
   const props = PropertiesService.getScriptProperties();
   const secret = props.getProperty("AUTH_SECRET");
   const adminEmail = String(props.getProperty("ADMIN_EMAIL") || "").trim().toLowerCase();
+  const adminUsername = String(props.getProperty("ADMIN_USERNAME") || "saher").trim();
   const adminPassword = props.getProperty("ADMIN_PASSWORD");
 
   if (!secret || !adminEmail || !adminPassword) {
@@ -54,7 +55,7 @@ function handleRequest_(request) {
     let isAdmin = false;
 
     if (email === adminEmail && constantTimeEqual_(password, adminPassword)) {
-      user = { email: adminEmail, username: "Admin" };
+      user = { email: adminEmail, username: adminUsername || "saher" };
       isAdmin = true;
     } else {
       const rows = users.getDataRange().getValues();
@@ -79,6 +80,9 @@ function handleRequest_(request) {
   if (!sessionUser) return { ok: false, error: "Session expired. Please log in again." };
 
   if (action === "session") {
+    sessionUser.username = sessionUser.email === adminEmail
+      ? (adminUsername || "saher")
+      : findUsername_(users, sessionUser.email);
     return { ok: true, user: sessionUser, isAdmin: sessionUser.email === adminEmail };
   }
 
@@ -99,6 +103,14 @@ function handleRequest_(request) {
   }
 
   return { ok: false, error: "Unknown action." };
+}
+
+function findUsername_(sheet, email) {
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (normalizeEmail_(rows[i][0]) === email) return String(rows[i][1] || "");
+  }
+  return "";
 }
 
 function validateSession_(sheet, secret, token) {

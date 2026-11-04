@@ -1,6 +1,6 @@
 # Shared accounts setup (Google Sheets + Apps Script)
 
-The site now uses a shared backend instead of browser-local accounts. Deploying the static site alone is not enough: complete these setup steps before signup/login will work across devices.
+The site uses a shared backend instead of browser-local accounts. Deploying the static site alone is not enough: complete these setup steps before signup/login will work across devices.
 
 ## 1. Create the shared spreadsheet
 
@@ -12,14 +12,15 @@ The site now uses a shared backend instead of browser-local accounts. Deploying 
 In Apps Script, open **Project Settings → Script properties** and add:
 
 - `ADMIN_EMAIL` — `ssaheror@gmail.com`
-- `ADMIN_PASSWORD` — choose a new, strong password. Do not reuse the old password shown in the public client code.
+- `ADMIN_USERNAME` — `saher`
+- `ADMIN_PASSWORD` — choose a new, strong password privately. Do not put it in this repository or reuse a password shared in chat.
 - `AUTH_SECRET` — generate a long random secret (at least 32 random characters).
 
-These values belong only in Apps Script properties, never in `auth.js` or the public spreadsheet.
+These values belong only in Apps Script properties, never in `auth.js` or the public spreadsheet. The administrator account is configured on the backend; it does not need a row in the public `users` sheet.
 
 ## 3. Deploy the backend
 
-Deploy → **New deployment** → **Web app**. Choose **Execute as: Me** and **Who has access: Anyone**, authorize it, and copy the Web app URL ending in `/exec`. The endpoint must be publicly reachable for signup/login; the script itself checks sessions and only permits the configured admin to list users. Do not share edit access to the spreadsheet.
+Deploy → **New deployment** → **Web app**. Choose **Execute as: Me** and **Who has access: Anyone**, authorize it, and copy the Web app URL ending in `/exec`. The endpoint must be publicly reachable for signup/login; the script checks sessions and only permits the configured admin to list users. Do not share edit access to the spreadsheet.
 
 ## 4. Connect and publish the site
 
