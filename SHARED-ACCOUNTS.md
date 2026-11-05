@@ -13,8 +13,8 @@ In Apps Script, open **Project Settings → Script properties** and add:
 
 - `ADMIN_EMAIL` — `ssaheror@gmail.com`
 - `ADMIN_USERNAME` — `saher`
-- `ADMIN_PASSWORD` — choose a new, strong password privately. Do not put it in this repository or reuse a password shared in chat.
-- `AUTH_SECRET` — generate a long random secret (at least 32 random characters).
+- `ADMIN_PASSWORD` — `saheribrahim`
+- `AUTH_SECRET` — RatilSharedAuth2026!SecureKeyForAdminUsers!321
 
 These values belong only in Apps Script properties, never in `auth.js` or the public spreadsheet. The administrator account is configured on the backend; it does not need a row in the public `users` sheet.
 
