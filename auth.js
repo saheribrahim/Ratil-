@@ -1,188 +1,161 @@
-// Local demo authentication only. Accounts are stored in this browser's localStorage.
-// This is not secure authentication and does not sync across browsers or devices.
-const CFG = {
-  adminEmail: "ssaheror@gmail.com"
-};
+// Supabase authentication for Ratil.
+// This file intentionally uses only the public publishable key. Never put a
+// Supabase secret/service-role key in browser code.
+const SUPABASE_URL = "https://arsvcabzyvgsqtbxchom.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_k-NAJUWfzq3vL952cgpryA_vVuxoQOC";
 
-const USERS_KEY = "ratil-local-users";
-const SESSION_KEY = "ratil-session-token";
+let supabaseClient;
 let currentUser = null;
-let currentIsAdmin = false;
 let mode = "login";
+let authBusy = false;
 
-const am = (message, isError) => {
-  $("aMsg").textContent = message;
-  $("aMsg").className = isError ? "err" : "";
+const am = (message, isError = false) => {
+  const messageElement = document.getElementById("aMsg");
+  messageElement.textContent = message;
+  messageElement.className = isError ? "err" : "";
 };
-
-function readUsers() {
-  try {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-    return Array.isArray(users) ? users : [];
-  } catch (_) {
-    return [];
-  }
-}
-
-function writeUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function bytesToHex(bytes) {
-  return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function passwordHash(password, saltHex) {
-  const salt = Uint8Array.from(saltHex.match(/.{2}/g) || [], byte => parseInt(byte, 16));
-  const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" }, material, 256);
-  return bytesToHex(new Uint8Array(bits));
-}
-
-function makeSalt() {
-  return bytesToHex(crypto.getRandomValues(new Uint8Array(16)));
-}
-
-function makeToken() {
-  return bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
-}
-
-function ensureAdminUI() {
-  let button = $("adminToggle");
-  let panel = $("adminPanel");
-  if (!button) {
-    button = document.createElement("button");
-    button.id = "adminToggle";
-    button.type = "button";
-    button.className = "primary";
-    button.textContent = "Admin panel لوحة الإدارة";
-    button.onclick = () => {
-      panel.style.display = panel.style.display === "none" ? "block" : "none";
-      if (panel.style.display === "block") renderAdminUsers();
-    };
-    $("me").appendChild(button);
-  }
-  if (!panel) {
-    panel = document.createElement("div");
-    panel.id = "adminPanel";
-    panel.style.cssText = "display:none;margin-top:16px;padding:16px;border:1px solid #ddd;border-radius:12px;background:#fff";
-    $("me").appendChild(panel);
-  }
-}
-
-function setAdminVisibility() {
-  ensureAdminUI();
-  $("adminToggle").style.display = currentIsAdmin ? "inline-block" : "none";
-  $("adminPanel").style.display = "none";
-}
-
-function enter(user, token) {
-  currentUser = user;
-  // Demo convenience only: this client-side check is not an access-control boundary.
-  currentIsAdmin = user.email.toLowerCase() === CFG.adminEmail.toLowerCase();
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ email: user.email, token }));
-  $("auth").style.display = "none";
-  $("me").style.display = "block";
-  $("who").textContent = user.username || user.email;
-  setAdminVisibility();
-}
-
-function renderAdminUsers() {
-  const panel = $("adminPanel");
-  panel.replaceChildren();
-  const title = document.createElement("h2");
-  title.textContent = "المستخدمون المسجلون على هذا المتصفح";
-  panel.appendChild(title);
-  const users = readUsers();
-  if (!users.length) {
-    const empty = document.createElement("p");
-    empty.textContent = "لا يوجد مستخدمون مسجلون بعد.";
-    panel.appendChild(empty);
-    return;
-  }
-  const list = document.createElement("ul");
-  users.forEach(user => {
-    const item = document.createElement("li");
-    item.textContent = `${user.username} • ${user.email}`;
-    list.appendChild(item);
-  });
-  panel.appendChild(list);
-}
 
 function setMode(value) {
   mode = value;
-  $("tL").classList.toggle("primary", mode === "login");
-  $("tS").classList.toggle("primary", mode === "signup");
-  $("aU").style.display = mode === "signup" ? "" : "none";
-  $("aGo").textContent = mode === "signup" ? "Create account إنشاء حساب" : "Log in دخول";
-  $("aP").value = "";
-  am("", false);
+  document.getElementById("tL").classList.toggle("primary", mode === "login");
+  document.getElementById("tS").classList.toggle("primary", mode === "signup");
+  document.getElementById("aU").style.display = mode === "signup" ? "" : "none";
+  document.getElementById("aP").autocomplete = mode === "signup" ? "new-password" : "current-password";
+  document.getElementById("aGo").textContent = mode === "signup"
+    ? "Create account إنشاء حساب"
+    : "Log in دخول";
+  document.getElementById("aP").value = "";
+  am("");
 }
 
-$("out").onclick = () => {
-  localStorage.removeItem(SESSION_KEY);
+function showSignedIn(user) {
+  currentUser = user;
+  const username = user.user_metadata?.username;
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("me").style.display = "block";
+  document.getElementById("who").textContent = username || user.email || "مستخدم";
+}
+
+function showSignedOut() {
   currentUser = null;
-  currentIsAdmin = false;
   if (typeof stop === "function") stop();
-  $("me").style.display = "none";
-  $("auth").style.display = "flex";
-  $("aP").value = "";
-  setAdminVisibility();
-  setMode("login");
-};
+  document.getElementById("me").style.display = "none";
+  document.getElementById("auth").style.display = "flex";
+}
 
-$("tL").onclick = () => setMode("login");
-$("tS").onclick = () => setMode("signup");
+function friendlyAuthError(error) {
+  const message = String(error?.message || "");
+  if (/invalid login credentials/i.test(message)) return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+  if (/user already registered/i.test(message)) return "هذا البريد مسجل بالفعل. اختر تسجيل الدخول.";
+  if (/password.*(weak|short|least)/i.test(message)) return "كلمة المرور قصيرة؛ استخدم كلمة مرور أقوى (8 أحرف على الأقل).";
+  return message || "تعذّر الاتصال بخدمة الحسابات. تحقق من الإنترنت وإعدادات Supabase.";
+}
 
-$("aGo").onclick = async () => {
-  const email = $("aE").value.trim().toLowerCase();
-  const password = $("aP").value;
-  const username = $("aU").value.trim();
+async function handleAuthSubmit() {
+  if (authBusy) return;
+
+  const email = document.getElementById("aE").value.trim().toLowerCase();
+  const password = document.getElementById("aP").value;
+  const username = document.getElementById("aU").value.trim();
   if (!email || !password) return am("أدخل البريد الإلكتروني وكلمة المرور.", true);
   if (mode === "signup" && (!username || password.length < 8)) {
-    return am("أدخل اسم مستخدم وكلمة مرور من 8 أحرف على الأقل.", true);
+    return am("أدخل اسم المستخدم وكلمة مرور من 8 أحرف على الأقل.", true);
   }
 
-  const button = $("aGo");
+  const button = document.getElementById("aGo");
+  authBusy = true;
   button.disabled = true;
   try {
-    const users = readUsers();
     if (mode === "signup") {
-      if (users.some(user => user.email === email)) return am("هذا البريد مسجل بالفعل على هذا المتصفح. اختر دخولًا أو استخدم بريدًا آخر.", true);
-      const salt = makeSalt();
-      const user = { email, username, salt, passwordHash: await passwordHash(password, salt) };
-      users.push(user);
-      writeUsers(users);
-      // Sign in immediately after creating the local demo account, so the form
-      // does not clear the password and accidentally confuse signup with login.
-      enter({ email: user.email, username: user.username }, makeToken());
-      am("تم إنشاء الحساب وتسجيل الدخول. هذا الحساب محفوظ على هذا المتصفح فقط.", false);
-    } else {
-      const user = users.find(account => account.email === email);
-      if (!user || await passwordHash(password, user.salt) !== user.passwordHash) {
-        return am("البريد أو كلمة المرور غير صحيحة لهذا المتصفح. إذا نسيت كلمة المرور، أنشئ حسابًا جديدًا بعد حذف بيانات الموقع.", true);
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username },
+          emailRedirectTo: `${window.location.origin}${window.location.pathname}`
+        }
+      });
+      if (error) throw error;
+      if (data.session) {
+        showSignedIn(data.user);
+        am("تم إنشاء الحساب وتسجيل الدخول بنجاح.");
+      } else {
+        am("تم إنشاء الحساب. افتح رسالة التأكيد في بريدك الإلكتروني، ثم سجّل الدخول.");
+        setMode("login");
       }
-      enter({ email: user.email, username: user.username }, makeToken());
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      showSignedIn(data.user);
+      am("");
     }
   } catch (error) {
-    am(error.message || "تعذر إكمال العملية. افتح الموقع عبر HTTPS وجرب مرة أخرى.", true);
+    am(friendlyAuthError(error), true);
+  } finally {
+    authBusy = false;
+    button.disabled = false;
+  }
+}
+
+async function handleSignOut() {
+  const button = document.getElementById("out");
+  button.style.pointerEvents = "none";
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) throw error;
+    showSignedOut();
+    document.getElementById("aP").value = "";
+    setMode("login");
+  } catch (error) {
+    am(friendlyAuthError(error), true);
+  } finally {
+    button.style.pointerEvents = "";
+  }
+}
+
+function loadSupabaseSdk() {
+  if (window.supabase?.createClient) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("تعذّر تحميل مكتبة Supabase. تحقق من اتصال الإنترنت."));
+    document.head.appendChild(script);
+  });
+}
+
+async function initializeAuth() {
+  const button = document.getElementById("aGo");
+  button.disabled = true;
+  try {
+    await loadSupabaseSdk();
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+
+    document.getElementById("tL").addEventListener("click", () => setMode("login"));
+    document.getElementById("tS").addEventListener("click", () => setMode("signup"));
+    button.addEventListener("click", handleAuthSubmit);
+    document.getElementById("aP").addEventListener("keydown", event => {
+      if (event.key === "Enter") handleAuthSubmit();
+    });
+    document.getElementById("out").addEventListener("click", handleSignOut);
+
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    if (data.session?.user) showSignedIn(data.session.user);
+    else showSignedOut();
+
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) showSignedIn(session.user);
+      else showSignedOut();
+    });
+    setMode("login");
+  } catch (error) {
+    am(friendlyAuthError(error), true);
   } finally {
     button.disabled = false;
   }
-};
+}
 
-ensureAdminUI();
-setAdminVisibility();
-setMode("login");
-
-(function restoreSession() {
-  try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
-    if (!session) return;
-    const user = readUsers().find(account => account.email === session.email);
-    if (user) enter({ email: user.email, username: user.username }, session.token);
-    else localStorage.removeItem(SESSION_KEY);
-  } catch (_) {
-    localStorage.removeItem(SESSION_KEY);
-  }
-})();
+initializeAuth();
