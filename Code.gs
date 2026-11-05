@@ -1,11 +1,9 @@
 // Google Apps Script backend for Ratil shared accounts.
-// Bind this script to the Google Sheet that will store accounts. Keep the
-// administrator password and AUTH_SECRET in Script properties, never in source.
+// Bind this script to the Google Sheet that will store accounts, then configure
+// ADMIN_EMAIL, ADMIN_USERNAME, ADMIN_PASSWORD, and AUTH_SECRET in Script properties.
 const USERS_SHEET = "users";
 const SESSIONS_SHEET = "sessions";
 const SESSION_DAYS = 30;
-const DEFAULT_ADMIN_EMAIL = "ssaheror@gmail.com";
-const DEFAULT_ADMIN_USERNAME = "saher";
 
 function doPost(e) {
   try {
@@ -23,12 +21,12 @@ function handleRequest_(request) {
   const sessions = getSheet_(SESSIONS_SHEET, ["tokenHash", "email", "expiresAt"]);
   const props = PropertiesService.getScriptProperties();
   const secret = props.getProperty("AUTH_SECRET");
-  const adminEmail = String(props.getProperty("ADMIN_EMAIL") || DEFAULT_ADMIN_EMAIL).trim().toLowerCase();
-  const adminUsername = String(props.getProperty("ADMIN_USERNAME") || DEFAULT_ADMIN_USERNAME).trim();
+  const adminEmail = String(props.getProperty("ADMIN_EMAIL") || "").trim().toLowerCase();
+  const adminUsername = String(props.getProperty("ADMIN_USERNAME") || "saher").trim();
   const adminPassword = props.getProperty("ADMIN_PASSWORD");
 
   if (!secret || !adminEmail || !adminPassword) {
-    return { ok: false, error: "Backend setup incomplete. Configure ADMIN_PASSWORD and AUTH_SECRET in Script properties." };
+    return { ok: false, error: "Backend setup incomplete. Configure ADMIN_EMAIL, ADMIN_PASSWORD, and AUTH_SECRET." };
   }
 
   if (action === "signup") {
@@ -57,7 +55,7 @@ function handleRequest_(request) {
     let isAdmin = false;
 
     if (email === adminEmail && constantTimeEqual_(password, adminPassword)) {
-      user = { email: adminEmail, username: adminUsername || DEFAULT_ADMIN_USERNAME };
+      user = { email: adminEmail, username: adminUsername || "saher" };
       isAdmin = true;
     } else {
       const rows = users.getDataRange().getValues();
@@ -83,7 +81,7 @@ function handleRequest_(request) {
 
   if (action === "session") {
     sessionUser.username = sessionUser.email === adminEmail
-      ? (adminUsername || DEFAULT_ADMIN_USERNAME)
+      ? (adminUsername || "saher")
       : findUsername_(users, sessionUser.email);
     return { ok: true, user: sessionUser, isAdmin: sessionUser.email === adminEmail };
   }
