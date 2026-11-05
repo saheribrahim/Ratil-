@@ -148,17 +148,19 @@ $("aGo").onclick = async () => {
   try {
     const users = readUsers();
     if (mode === "signup") {
-      if (users.some(user => user.email === email)) return am("هذا البريد مسجل بالفعل على هذا المتصفح.", true);
+      if (users.some(user => user.email === email)) return am("هذا البريد مسجل بالفعل على هذا المتصفح. اختر دخولًا أو استخدم بريدًا آخر.", true);
       const salt = makeSalt();
-      users.push({ email, username, salt, passwordHash: await passwordHash(password, salt) });
+      const user = { email, username, salt, passwordHash: await passwordHash(password, salt) };
+      users.push(user);
       writeUsers(users);
-      am("تم إنشاء حساب تجريبي على هذا المتصفح. سجّل الدخول الآن.", false);
-      setMode("login");
-      $("aE").value = email;
+      // Sign in immediately after creating the local demo account, so the form
+      // does not clear the password and accidentally confuse signup with login.
+      enter({ email: user.email, username: user.username }, makeToken());
+      am("تم إنشاء الحساب وتسجيل الدخول. هذا الحساب محفوظ على هذا المتصفح فقط.", false);
     } else {
       const user = users.find(account => account.email === email);
       if (!user || await passwordHash(password, user.salt) !== user.passwordHash) {
-        return am("البريد أو كلمة المرور غير صحيحة لهذا المتصفح.", true);
+        return am("البريد أو كلمة المرور غير صحيحة لهذا المتصفح. إذا نسيت كلمة المرور، أنشئ حسابًا جديدًا بعد حذف بيانات الموقع.", true);
       }
       enter({ email: user.email, username: user.username }, makeToken());
     }
