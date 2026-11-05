@@ -2,7 +2,7 @@
 // Set this URL after deploying the Apps Script as a Web App.
 const CFG = {
   adminEmail: "ssaheror@gmail.com",
-  remoteApi: "https://script.google.com/macros/s/PASTE_YOUR_DEPLOYMENT_ID/exec"
+  remoteApi: "https://script.google.com/macros/s/AKfycbz83E24tfSBeKBZbdSelw-UGzK1tEZsS9-6VY6StNvlpldXjd5UiK0GRT1XYi4bgJLe/exec"
 };
 
 const SESSION_KEY = "ratil-session-token";
