@@ -3,6 +3,8 @@
 // Supabase secret/service-role key in browser code.
 const SUPABASE_URL = "https://arsvcabzyvgsqtbxchom.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_k-NAJUWfzq3vL952cgpryA_vVuxoQOC";
+const ADMIN_EMAIL = "ssaheror@gmail.com";
+const ADMIN_USERNAME = "saher";
 
 let supabaseClient;
 let currentUser = null;
@@ -28,9 +30,18 @@ function setMode(value) {
   am("");
 }
 
+function normalizedEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function isAdminAccount(userOrEmail) {
+  const email = typeof userOrEmail === "string" ? userOrEmail : userOrEmail?.email;
+  return normalizedEmail(email) === ADMIN_EMAIL;
+}
+
 function showSignedIn(user) {
   currentUser = user;
-  const username = user.user_metadata?.username;
+  const username = isAdminAccount(user) ? ADMIN_USERNAME : user.user_metadata?.username;
   document.getElementById("auth").style.display = "none";
   document.getElementById("me").style.display = "block";
   document.getElementById("who").textContent = username || user.email || "مستخدم";
@@ -54,9 +65,10 @@ function friendlyAuthError(error) {
 async function handleAuthSubmit() {
   if (authBusy) return;
 
-  const email = document.getElementById("aE").value.trim().toLowerCase();
+  const email = normalizedEmail(document.getElementById("aE").value);
   const password = document.getElementById("aP").value;
-  const username = document.getElementById("aU").value.trim();
+  const enteredUsername = document.getElementById("aU").value.trim();
+  const username = isAdminAccount(email) ? ADMIN_USERNAME : enteredUsername;
   if (!email || !password) return am("أدخل البريد الإلكتروني وكلمة المرور.", true);
   if (mode === "signup" && (!username || password.length < 8)) {
     return am("أدخل اسم المستخدم وكلمة مرور من 8 أحرف على الأقل.", true);
@@ -135,6 +147,11 @@ async function initializeAuth() {
 
     document.getElementById("tL").addEventListener("click", () => setMode("login"));
     document.getElementById("tS").addEventListener("click", () => setMode("signup"));
+    document.getElementById("aE").addEventListener("input", event => {
+      if (mode === "signup" && isAdminAccount(event.target.value)) {
+        document.getElementById("aU").value = ADMIN_USERNAME;
+      }
+    });
     button.addEventListener("click", handleAuthSubmit);
     document.getElementById("aP").addEventListener("keydown", event => {
       if (event.key === "Enter") handleAuthSubmit();
