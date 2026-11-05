@@ -11,12 +11,14 @@ The site uses a shared backend instead of browser-local accounts. Deploying the 
 
 In Apps Script, open **Project Settings → Script properties** and add:
 
-- `ADMIN_EMAIL` — `ssaheror@gmail.com`
-- `ADMIN_USERNAME` — `saher`
-- `ADMIN_PASSWORD` — `saheribrahim`
-- `AUTH_SECRET` — RatilSharedAuth2026!SecureKeyForAdminUsers!321
+- `ADMIN_EMAIL` — your administrator email.
+- `ADMIN_USERNAME` — your administrator display name.
+- `ADMIN_PASSWORD` — choose a new, strong password privately. Never put it in this repository or share it in chat.
+- `AUTH_SECRET` — generate a new, long random secret (at least 32 random characters). Keep it only in Script properties; do not put it in source files or the spreadsheet.
 
-These values belong only in Apps Script properties, never in `auth.js` or the public spreadsheet. The administrator account is configured on the backend; it does not need a row in the public `users` sheet.
+Any admin password or auth secret previously shared in a repository, screenshot, or conversation should be considered compromised. Replace those values with new ones before deploying. `Code.gs` reads the secret from Script properties; it does not contain the secret value. The secret is required for password verification and session-token protection, so removing the setting would disable secure authentication.
+
+The administrator account is configured on the backend; it does not need a row in the public `users` sheet.
 
 ## 3. Deploy the backend
 
