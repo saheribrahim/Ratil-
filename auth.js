@@ -266,8 +266,6 @@ async function initializeAuth() {
   const button = document.getElementById("aGo");
   button.disabled = true;
   try {
-    // Remove the email field from the login/signup form; Supabase's internal
-    // identifier is generated from the username and never shown to the user.
     document.getElementById("aE")?.remove();
     injectFeedbackUI();
     await loadSupabaseSdk();
@@ -300,9 +298,5 @@ async function initializeAuth() {
   }
 }
 
+// السطر الوحيد في النهاية هو استدعاء الدالة فقط:
 initializeAuth();
-const { data, error } = await supabaseClient
-    .from("feedback")
-    .select("id, username, message, created_at")
-    .order("created_at", { ascending: false })
-    .limit(100);
