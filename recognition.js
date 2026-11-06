@@ -1,6 +1,24 @@
 // Recognition matching: compares what you recited with the text.
 // A new verse cannot start until every word in the current verse is green.
 const TH={strict:[.9,.75],normal:[.78,.6],lenient:[.7,.5]};
+function verseIsRepeatedCorrectly(start,end,rw,threshold){
+ const expected=words.slice(start,end).map(word=>word.n);
+ if(!expected.length||expected.some(word=>!word))return false;
+ for(let i=0;i<rw.length;i++){
+  let cursor=i,matched=true;
+  for(const word of expected){
+   let best=-1,bestScore=0;
+   for(let j=cursor;j<Math.min(cursor+3,rw.length);j++){
+    const score=sim(word,rw[j]);
+    if(score>bestScore){bestScore=score;best=j}
+   }
+   if(best<0||bestScore<threshold){matched=false;break}
+   cursor=best+1;
+  }
+  if(matched)return true;
+ }
+ return false;
+}
 function trial(rw){
  const[okT,nearT]=TH.normal;
  const s=baseSt.slice(),h=hd.slice();let p=basePos;
@@ -32,6 +50,20 @@ function trial(rw){
    p=verseEnd;
   }
  }
+
+ // If the user has moved on and then correctly repeats an earlier verse,
+ // clear its red/yellow marks and make those words green.
+ const currentVerse=basePos<words.length?words[basePos].v:Infinity;
+ for(let start=0;start<end;){
+  const verse=words[start].v;
+  let finish=start+1;
+  while(finish<end&&words[finish].v===verse)finish++;
+  if(verse<currentVerse&&s.slice(start,finish).some(status=>status!=="ok")&&verseIsRepeatedCorrectly(start,finish,rw,okT)){
+   for(let k=start;k<finish;k++){s[k]="ok";h[k]=words[k].n}
+  }
+  start=finish;
+ }
+ while(p<end&&s[p]==="ok")p++;
  let sc=0;s.forEach((x,k)=>{if(k>=basePos&&k<p)sc+=x==="ok"?1:x==="near"?.5:-.3});
  return{s,p,h,sc};
 }
