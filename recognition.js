@@ -51,8 +51,7 @@ function trial(rw){
   }
  }
 
- // If the user has moved on and then correctly repeats an earlier verse,
- // clear its red/yellow marks and make those words green.
+ // Correctly repeating a previously attempted verse turns its words green.
  const currentVerse=basePos<words.length?words[basePos].v:Infinity;
  for(let start=0;start<end;){
   const verse=words[start].v;
