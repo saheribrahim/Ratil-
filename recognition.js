@@ -25,8 +25,7 @@ function trial(rw){
   if(used===-2){s[hit]=s[hit+1]=lab;h[hit]=h[hit+1]=rw[i];p=hit+2}
   else{s[hit]=lab;h[hit]=rw[i];p=hit+1;if(used===2)i++}
 
-  // If any word in this verse is not green, keep the cursor on the first
-  // unfinished word so the next verse cannot be entered until it is corrected.
+  // Keep the cursor at the first incorrect or unfinished word in this verse.
   if(p>=verseEnd){
    const firstUnfinished=s.findIndex((status,index)=>index>=verseStart&&index<verseEnd&&status!=="ok");
    if(firstUnfinished!==-1){p=firstUnfinished;break}
