@@ -1,16 +1,40 @@
-// Recognition matching: compares what you recited with the text
+// Recognition matching: compares what you recited with the text.
+// A new verse cannot start until every word in the current verse is green.
 const TH={strict:[.9,.75],normal:[.78,.6],lenient:[.7,.5]};
+function verseIsRepeatedCorrectly(start,end,rw,threshold){
+ const expected=words.slice(start,end).map(word=>word.n);
+ if(!expected.length||expected.some(word=>!word))return false;
+ for(let i=0;i<rw.length;i++){
+  let cursor=i,matched=true;
+  for(const word of expected){
+   let best=-1,bestScore=0;
+   for(let j=cursor;j<Math.min(cursor+3,rw.length);j++){
+    const score=sim(word,rw[j]);
+    if(score>bestScore){bestScore=score;best=j}
+   }
+   if(best<0||bestScore<threshold){matched=false;break}
+   cursor=best+1;
+  }
+  if(matched)return true;
+ }
+ return false;
+}
 function trial(rw){
  const[okT,nearT]=TH.normal;
  const s=baseSt.slice(),h=hd.slice();let p=basePos;
  for(let k=basePos;k<h.length;k++)h[k]="";
  const end=Math.min(lim,words.length);
  for(let i=0;i<rw.length&&p<end;i++){
+  const verse=words[p].v;
+  let verseStart=p,verseEnd=p+1;
+  while(verseStart>0&&words[verseStart-1].v===verse)verseStart--;
+  while(verseEnd<end&&words[verseEnd].v===verse)verseEnd++;
+
   let hit=-1,score=0,used=1;
-  for(let j=p;j<Math.min(p+4,end);j++){
+  for(let j=p;j<Math.min(p+4,verseEnd);j++){
    let sc=sim(rw[i],words[j].n),u=1;
    if(i+1<rw.length){const m=sim(rw[i]+rw[i+1],words[j].n);if(m>sc+.05){sc=m;u=2}}
-   if(j+1<end){const m=sim(rw[i],words[j].n+words[j+1].n);if(m>=.85&&m>sc){sc=m;u=-2}}
+   if(j+1<verseEnd){const m=sim(rw[i],words[j].n+words[j+1].n);if(m>=.85&&m>sc){sc=m;u=-2}}
    if(sc>=nearT&&sc>score+(j>p?.08:0)){hit=j;score=sc;used=u;if(sc>=.95)break}
   }
   if(hit<0)continue;
@@ -18,7 +42,27 @@ function trial(rw){
   const lab=score>=okT?"ok":"near";
   if(used===-2){s[hit]=s[hit+1]=lab;h[hit]=h[hit+1]=rw[i];p=hit+2}
   else{s[hit]=lab;h[hit]=rw[i];p=hit+1;if(used===2)i++}
+
+  // Keep the cursor at the first incorrect or unfinished word in this verse.
+  if(p>=verseEnd){
+   const firstUnfinished=s.findIndex((status,index)=>index>=verseStart&&index<verseEnd&&status!=="ok");
+   if(firstUnfinished!==-1){p=firstUnfinished;break}
+   p=verseEnd;
+  }
  }
+
+ // Correctly repeating a previously attempted verse turns its words green.
+ const currentVerse=basePos<words.length?words[basePos].v:Infinity;
+ for(let start=0;start<end;){
+  const verse=words[start].v;
+  let finish=start+1;
+  while(finish<end&&words[finish].v===verse)finish++;
+  if(verse<currentVerse&&s.slice(start,finish).some(status=>status!=="ok")&&verseIsRepeatedCorrectly(start,finish,rw,okT)){
+   for(let k=start;k<finish;k++){s[k]="ok";h[k]=words[k].n}
+  }
+  start=finish;
+ }
+ while(p<end&&s[p]==="ok")p++;
  let sc=0;s.forEach((x,k)=>{if(k>=basePos&&k<p)sc+=x==="ok"?1:x==="near"?.5:-.3});
  return{s,p,h,sc};
 }
