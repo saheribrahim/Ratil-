@@ -66,7 +66,7 @@ function trial(rw){
  let sc=0;s.forEach((x,k)=>{if(k>=basePos&&k<p)sc+=x==="ok"?1:x==="near"?.5:-.3});
  return{s,p,h,sc};
 }
-function alignBest(cands){let b=null;for(const rw of cands){const r=trial(rw);if(!b||r.sc>b.sc)b=r}if(b){st=b.s;pos=b.p}render()}
+function alignBest(cands){let b=null;for(const rw of cands){const r=trial(rw);if(!b||r.sc>b.sc)b=r}if(b){st=b.s;pos=b.p;hd=b.h}render()}
 function htmlOf(i){const w=words[i];if($("tjw").checked){const nx=words[i+1]&&words[i+1].v===w.v?words[i+1].t:"";return tj(w.t,nx)}return w.t}
 const fl=t=>((t.match(/[\u0621-\u064A\u0671][^\u0621-\u064A\u0671]*/)||[t])[0])+"…";
 $("mMask").onchange=render;
