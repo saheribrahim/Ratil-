@@ -301,3 +301,8 @@ async function initializeAuth() {
 }
 
 initializeAuth();
+const { data, error } = await supabaseClient
+    .from("feedback")
+    .select("id, username, message, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
