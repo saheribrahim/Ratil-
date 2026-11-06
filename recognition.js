@@ -9,7 +9,7 @@ function trial(rw){
  for(let i=0;i<rw.length&&p<end;i++){
   const verse=words[p].v;
   let verseStart=p,verseEnd=p+1;
-  while(verseStart>basePos&&words[verseStart-1].v===verse)verseStart--;
+  while(verseStart>0&&words[verseStart-1].v===verse)verseStart--;
   while(verseEnd<end&&words[verseEnd].v===verse)verseEnd++;
 
   let hit=-1,score=0,used=1;
@@ -25,10 +25,12 @@ function trial(rw){
   if(used===-2){s[hit]=s[hit+1]=lab;h[hit]=h[hit+1]=rw[i];p=hit+2}
   else{s[hit]=lab;h[hit]=rw[i];p=hit+1;if(used===2)i++}
 
-  // Do not process the next verse while any word in this one is yellow or red.
+  // If any word in this verse is not green, keep the cursor on the first
+  // unfinished word so the next verse cannot be entered until it is corrected.
   if(p>=verseEnd){
+   const firstUnfinished=s.findIndex((status,index)=>index>=verseStart&&index<verseEnd&&status!=="ok");
+   if(firstUnfinished!==-1){p=firstUnfinished;break}
    p=verseEnd;
-   if(!s.slice(verseStart,verseEnd).every(status=>status==="ok"))break;
   }
  }
  let sc=0;s.forEach((x,k)=>{if(k>=basePos&&k<p)sc+=x==="ok"?1:x==="near"?.5:-.3});
